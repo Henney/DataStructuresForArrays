@@ -14,7 +14,7 @@ private:
 	int h = 0;		// Head element
 
 	int elem(int r) {
-		return (h + m + r) % m;
+		return (h + l + r) % l;
 	}
 
 	void incH(int inc) {
@@ -29,13 +29,13 @@ private:
 #if DEBUG
 		cout << endl << "Doubling..." << endl << toString() << endl << toStringPretty() << endl;
 #endif
-		CircularDeque *newB = new CircularDeque[m * 2];
+		CircularDeque *newB = new CircularDeque[m << 1];
 		for (int i = 0; i < m; i++) {
 			newB[i] = a[elem(i)];
 			newB[i].doubleSize();
 		}
-		for (int i = m; i < m * 2; i++) {
-			newB[i] = CircularDeque(m * 2); // TODO: Slow af way of doing this.. (allocating memory then reallocating)
+		for (int i = m; i < m << 1; i++) {
+			newB[i] = CircularDeque(l << 1); // TODO: Slow af way of doing this.. (allocating memory then reallocating)
 		}
 		a = newB;
 		h = 0;
@@ -57,126 +57,86 @@ private:
 				}
 			}
 		}
+		m = m << 1;
+		l = l << 1;
 #if DEBUG
 		cout << endl << "Done doubling..." << endl << toString() << endl << toStringPretty() << endl;
 #endif
 	}
 public:
 	int n = 0;		// Number of elements
-	int m = 0;		// Capacity/length
+	int m = 0;		// Number of subvectors
+	int l = 0;		// Size of subvectors
 
 	TieredVector(int k) {
 		this->k = k;
-		this->m = (int)pow(2, k);
-		if (k > 2) {
-			cerr << "k > 2 is not implemented yet";
-			exit(0);
-			//recA = new TieredVector[DEFAULT_SIZE]{ k - 1, k - 1, k - 1, k - 1 };
-			delete[] a;
-		} else {
-			a = new CircularDeque[m];
-			//delete[] a;
-		}
+		this->m = DEFAULT_SIZE;
+		this->l = DEFAULT_SIZE;
+		a = new CircularDeque[m];
 	}
 
 	~TieredVector(void) {
-		if (k > 2) {
-			//delete[] recA;
-		} else {
-			delete[] a;
-		}
+		delete[] a;
 	}
 
 	int getElemAt(int r) {
 		checkIndexOutOfBounds(r, n, "get", "TieredVector");
 
-		if (k > 2) {
-			//int l0 = a[(h + r) % length].size;
-			//int i = r - (int)ceil(l0 / size);
-			//return i == 0 ? a[i].getElemAt((h + r) % length) : a[i].getElemAt((h + (r - (i - 1) * size - l0)) % length); // TODO
-			cerr << "k > 2 not implemented";
-			exit(0);
-			return -1;
-		} else {
-			int i = a[elem((int)ceil(float(r) / m))].getElemAt(r - i*m);
-			return i; // == 0 ? a[elem(i)].getElemAt(r) : a[elem(i)].getElemAt(r - (i - 1) * a[elem(0)].l - l0);
-		}
+		int i = (int)ceil(float(r) / m);
+		return a[elem(i)].getElemAt(r - i*m);
 	}
 
 	void insertElemAt(int r, int e) {
 #if DEBUG
 		cout << endl << "Inserting at r: " << r << endl << toString() << endl << toStringPretty() << endl;
 #endif
-		//checkIndexOutOfBounds(r, n + 1, "insert", "TieredVector");
+		checkIndexOutOfBounds(r, n + 1, "insert", "TieredVector");
 
 		if (isFull()) {
 			doubleSize();
 		}
 
-		// TODO: Only below is not correct
-		int l0 = a[elem(0)].n;
-		int insertIdx = (int)ceil(float(r + 1 - l0) / a[elem(0)].l);
-		
-		int newR = insertIdx == 0 ? r : (r - l0) % m;
+		int i = r / m;
 		
 #if DEBUG
-		cout << "insertIdx: " << insertIdx << " r: " << r << " newR: " << newR << endl;
+		cout << "insertIdx: " << i << " r: " << r << " newR: " << r - i*m << endl;
+		cout << "Inserting from back" << endl;
 #endif
-		//if (r >= n - r) {
-#if DEBUG
-			cout << "Inserting from back" << endl;
-#endif
-			if (a[elem(insertIdx)].isFull()) {
-				int back = (int)ceil(float(n - l0) / a[elem(0)].l);
-				if (a[elem(back)].isFull()) {
-					back++;
-				}
-#if DEBUG
-				cout << "Back: " << back << endl;
-#endif
-				for (int i = back; i > insertIdx; i--) {
-					a[elem(i)].insertFirst(a[elem(i - 1)].removeLast());
-				}
+		if (a[elem(i)].isFull()) {
+			int back = n / m;
+			if (a[elem(back)].isFull()) {
+				back++;
 			}
-		//} else {
 #if DEBUG
-			cout << "Inserting from front" << endl;
+			cout << "Back: " << back << endl;
 #endif
-			/*if (a[elem(0)].isFull()) {
-				incH(-1);
-				if (r > 0) {
-					insertIdx++;
-				}
+			for (int j = back; j > i; j--) {
+				a[elem(j)].insertFirst(a[elem(j - 1)].removeLast());
 			}
-			if (a[elem(insertIdx)].isFull()) {
-				for (int i = 0; i < insertIdx; i++) {
-					a[elem(i)].insertLast(a[elem(i + 1)].removeFirst());
-				}
-				newR = (newR + m - 1) % m;
-			}
-		}*/
-		a[elem(insertIdx)].insertElemAt(newR, e);
+		}
+		a[elem(i)].insertElemAt(r - i*m, e);
 		n++;
 	}
 
 	int removeElemAt(int r) {
+#if DEBUG
+		cout << endl << "Removing at r: " << r << endl << toString() << endl << toStringPretty() << endl;
+#endif
 		checkIndexOutOfBounds(r, n, "remove", "TieredVector");
-		int e = a[elem(r / a[elem(0)].l)].removeElemAt(r % a[elem(0)].l);
-		if (true) { //r >= size - r) {			
-			for (int i = r / m; i < (n - 1) / m; i++) {
-				a[elem(i)].insertLast(a[elem(i + 1)].removeFirst());
-			}
-		} else {
-			incH(1);
+		int i = r / m;
+		int e = a[elem(i)].removeElemAt(r - i*m);
+		for (int j = i; j < (n-1) / m; j++) {
+			a[elem(j)].insertLast(a[elem(j + 1)].removeFirst());
 		}
 		n--;
+#if DEBUG
+		cout << endl << "Removed: " << r << endl << toString() << endl << toStringPretty() << endl;
+#endif
 		return e;
 	}
 
 	bool isFull() {
-		// TODO: Might need to be defined differently. Depends on where the next element is to be inserted.
-		return (a[elem(0)].isFull() && !a[elem(m-1)].isEmpty()) || a[elem(m - 1)].isFull();
-		//return n == l * a[elem(0)].l;
+		return a[elem(m - 1)].isFull();
 	}
 
 	string toStringPretty() {

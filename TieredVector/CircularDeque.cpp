@@ -39,13 +39,13 @@ public:
 	}
 
 	void doubleSize() {
-		int *b = new int[l * 2];
+		int *b = new int[l << 1];
 		for (int i = 0; i < n; i++) {
 			b[i] = getElemAt(i);
 		}
 		delete[] a;
 		this->a = b;
-		l *= 2;
+		l = l << 1;
 		h = 0;
 	}
 

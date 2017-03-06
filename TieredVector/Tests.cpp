@@ -40,24 +40,28 @@ void testK1() {
 void testK2() {
 	TieredVector tv = TieredVector(2);
 
-	int n = 16;
+	int n = 64;
 
-	for (int i = 0; i < n; i++) {
+	/*for (int i = 0; i < n; i++) {
 		tv.insertElemAt(i, i);
 	}
-	/*
+	
 	for (int i = 4; i >= 0; i--) {
 		tv.removeElemAt(i);
-	}*/
+	}
 
 	for (int i = 0; i < 10; i++) {
 		tv.insertElemAt(5, n + i);
 	}
 
-	/*for (int i = 0; i < n; i++) {
-		tv.insertElemAt(n+10, n*2 + i);
+	for (int i = 0; i < n; i++) {
+		tv.insertElemAt(tv.n-10, n*2 + i);
 	}*/
 
+	for (int i = 0; i < n; i++) {
+		int no = std::rand() % (tv.n + 1);
+		tv.insertElemAt(no, i);
+	}
 }
 
 void benchmarkInsertion()
@@ -67,14 +71,15 @@ void benchmarkInsertion()
 	SIMPLEPERF_FUNCSTART;
 
 	for (int i = 1; i <= 15; i++) {
-		n = n*2;
+		n = n << 1;
 		cout << "Size: " << n << endl;
 
+		srand(1337);
 		TieredVector tv(2);
+
 		SIMPLEPERF_START("Inserting into TieredVector");
 		for (int i = 0; i < n; i++) {
 			int no = std::rand() % (tv.n + 1);
-			//cout << endl << "i: " << i << " r: " << no << endl;
 			tv.insertElemAt(no, i);
 		}
 		SIMPLEPERF_END;
@@ -87,6 +92,7 @@ void benchmarkInsertion()
 		SIMPLEPERF_END;
 		*/
 
+		srand(1337);
 		CircularDeque cd = CircularDeque(true);
 
 		SIMPLEPERF_START("Inserting into CircularDeque");
@@ -102,6 +108,7 @@ void benchmarkInsertion()
 		}
 		SIMPLEPERF_END;
 		*/
+		srand(1337);
 		std::vector<int> v;
 
 		SIMPLEPERF_START("Inserting into vector");
