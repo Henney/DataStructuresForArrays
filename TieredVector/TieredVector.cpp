@@ -7,7 +7,7 @@
 class TieredVector {
 private:
 	int k = 0;		// Tier of the current vector
-	int shift = 0;
+	int shift = 0;	// TODO
 
 	//TieredVector *recA;
 	CircularDeque *a;
@@ -18,7 +18,18 @@ private:
 		return (h + l + r) % l;
 	}
 
+	void init(int k, int size) {
+		this->k = k;
+		this->m = size;
+		this->l = size;
+		this->shift = 1;
+		a = new CircularDeque[m];
+	}
+
 	void doubleSize() {
+#if DEBUG
+		cout << endl << "Doubling..." << endl << toString() << endl << toStringPretty() << endl;
+#endif
 		CircularDeque *newB = new CircularDeque[m * 2];
 		for (int i = 0; i < m; i++) {
 			newB[i] = a[elem(i)];
@@ -49,18 +60,21 @@ private:
 		}
 		m *= 2;
 		l *= 2;
+#if DEBUG
+		cout << endl << "Done doubling..." << endl << toString() << endl << toStringPretty() << endl;
+#endif
 	}
 public:
 	int n = 0;		// Number of elements
 	int m = 0;		// Number of subvectors
 	int l = 0;		// Size of subvectors
 
+	TieredVector(int k, int size) {
+		init(k, size);
+	}
+
 	TieredVector(int k) {
-		this->k = k;
-		this->m = DEFAULT_SIZE;
-		this->l = DEFAULT_SIZE;
-		this->shift = 1;
-		a = new CircularDeque[m];
+		init(k, DEFAULT_SIZE);
 	}
 
 	~TieredVector(void) {
@@ -73,17 +87,27 @@ public:
 	}
 
 	void insertElemAt(int r, int e) {
+#if DEBUG
+		cout << endl << "Inserting e: " << e << " at r: " << r << endl << toString() << endl << toStringPretty() << endl;
+#endif
+		checkIndexOutOfBounds(r, n + 1, "insert", "TieredVector");
 		if (isFull()) {
 			doubleSize();
 		}
 
 		int i = r / m;
-		
+
+#if DEBUG
+		cout << "insertIdx: " << i << " r: " << r << " newR: " << r - i*m << endl;
+#endif
 		if (a[elem(i)].isFull()) {
 			int back = n / m;
 			if (a[elem(back)].isFull()) {
 				back++;
 			}
+#if DEBUG
+			cout << "Back: " << back << endl;
+#endif
 			for (int j = back; j > i; j--) {
 				a[elem(j)].insertFirst(a[elem(j - 1)].removeLast());
 			}
@@ -93,6 +117,7 @@ public:
 	}
 
 	int removeElemAt(int r) {
+		checkIndexOutOfBounds(r, n, "remove", "TieredVector");
 		int i = r / m;
 		int e = a[elem(i)].removeElemAt(r - i*m);
 		for (int j = i; j < (n-1) / m; j++) {

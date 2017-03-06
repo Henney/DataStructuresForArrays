@@ -260,14 +260,44 @@ void benchmarkAccess()
 
 }
 
+void benchmarkSize()
+{
+	int preInsert = 10000;
+	int interval = 10;
+	int tests = 100;
+
+	SIMPLEPERF_FUNCSTART;
+	cout << "Tiered vector" << endl;
+	for (int n = 10; n <= preInsert; n += 10) {
+		cout << "[" << n << ",";
+
+		TieredVector tv(2, n);
+
+		for (int j = 0; j < preInsert; j++) {
+			tv.insertElemAt(j, j);
+		}
+
+		SIMPLEPERF_START();
+		for (int j = 0; j < tests; j++) {
+			tv.insertElemAt(0, j);
+		}
+		SIMPLEPERF_END;
+
+		cout << "], " << endl;
+	}
+	SIMPLEPERF_REPORTALL;
+
+}
+
 int main()
 {
 	//testK1();
-	testK2();
+	//testK2();
 
-	//benchmarkInsertion();
+	benchmarkInsertion();
 	//benchmarkRemoval();
 	//benchmarkAccess();
+	benchmarkSize();
 
 	string s;
 	cin >> s;

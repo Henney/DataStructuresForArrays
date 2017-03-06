@@ -7,7 +7,7 @@
 #include <string>
 
 #define DEFAULT_SIZE 4
-#define DEBUG true
+#define DEBUG false
 
 using std::cout;
 using std::cerr;

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Util.h"
+#include "Util.cpp"
 
 class CircularDeque {
 private:
@@ -48,22 +49,49 @@ public:
 	}
 
 	void insertElemAt(int r, int e) {
+#if DEBUG
+		cout << endl << "Inserting e: " << e << " at r: " << r << endl << toString() << endl << toStringPretty() << endl;
+#endif
+		checkIndexOutOfBounds(r, n + 1, "insert", "CircularDeque");
+
 		if (topLevel && isFull()) {
 			doubleSize();
 		}
 
+		if (isFull()) {
+			cerr << "CircularDeque is full: " << toString() << endl;
+			string s;
+			cin >> s;
+			exit(-1);
+		}
+
 		if (r >= l - r) {
 			for (int i = h + n; i > h + r; i--) {
+#if DEBUG
+				cout << "Before: " << toString() << endl;
+#endif
 				a[(i + l) % l] = a[(i + l - 1) % l];
+#if DEBUG
+				cout << "After: " << toString() << endl;
+#endif
 			}
 		} else {
 			for (int i = h; i < h + r; i++) {
+#if DEBUG
+				cout << "Before: " << toString() << endl;
+#endif
 				a[(i + l - 1) % l] = a[i % l];
+#if DEBUG
+				cout << "After: " << toString() << endl;
+#endif
 			}
 			incH(-1);
 		}
 		a[(h + r) % l] = e;
 		n++;
+#if DEBUG
+		cout << "Done: " << toString() << endl;
+#endif
 	}
 
 	void insertFirst(int e) {
@@ -75,6 +103,11 @@ public:
 	}
 
 	int removeElemAt(int r) {
+#if DEBUG
+		cout << endl << "Removing at r: " << r << endl << toString() << endl << toStringPretty() << endl;
+#endif
+		checkIndexOutOfBounds(r, n, "remove", "CircularDeque");
+
 		int e = a[(h + r) % l];
 
 		if (r < n - r) {
