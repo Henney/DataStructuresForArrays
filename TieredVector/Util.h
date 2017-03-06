@@ -6,9 +6,6 @@
 #include <array>
 #include <string>
 
-//#define TieredVector_EXPORTS TRUE
-//#ifdef TieredVector_EXPORTS
-//#define TV_API __declspec(dllexport)
 #define DEFAULT_SIZE 4
 #define DEBUG true
 

@@ -7,6 +7,7 @@
 class TieredVector {
 private:
 	int k = 0;		// Tier of the current vector
+	int shift = 0;
 
 	//TieredVector *recA;
 	CircularDeque *a;
@@ -17,25 +18,14 @@ private:
 		return (h + l + r) % l;
 	}
 
-	void incH(int inc) {
-		h = (h + m + inc) % m;
-	}
-
-	bool inBounds(int x) {
-		return x >= h || x < (h + n) % m;
-	}
-
 	void doubleSize() {
-#if DEBUG
-		cout << endl << "Doubling..." << endl << toString() << endl << toStringPretty() << endl;
-#endif
-		CircularDeque *newB = new CircularDeque[m << 1];
+		CircularDeque *newB = new CircularDeque[m * 2];
 		for (int i = 0; i < m; i++) {
 			newB[i] = a[elem(i)];
 			newB[i].doubleSize();
 		}
-		for (int i = m; i < m << 1; i++) {
-			newB[i] = CircularDeque(l << 1); // TODO: Slow af way of doing this.. (allocating memory then reallocating)
+		for (int i = m; i < m * 2; i++) {
+			newB[i] = CircularDeque(l * 2); // TODO: Slow way of doing this.. (allocating memory then reallocating)
 		}
 		a = newB;
 		h = 0;
@@ -57,11 +47,8 @@ private:
 				}
 			}
 		}
-		m = m << 1;
-		l = l << 1;
-#if DEBUG
-		cout << endl << "Done doubling..." << endl << toString() << endl << toStringPretty() << endl;
-#endif
+		m *= 2;
+		l *= 2;
 	}
 public:
 	int n = 0;		// Number of elements
@@ -72,6 +59,7 @@ public:
 		this->k = k;
 		this->m = DEFAULT_SIZE;
 		this->l = DEFAULT_SIZE;
+		this->shift = 1;
 		a = new CircularDeque[m];
 	}
 
@@ -80,36 +68,22 @@ public:
 	}
 
 	int getElemAt(int r) {
-		checkIndexOutOfBounds(r, n, "get", "TieredVector");
-
-		int i = (int)ceil(float(r) / m);
+		int i = r / m;
 		return a[elem(i)].getElemAt(r - i*m);
 	}
 
 	void insertElemAt(int r, int e) {
-#if DEBUG
-		cout << endl << "Inserting at r: " << r << endl << toString() << endl << toStringPretty() << endl;
-#endif
-		checkIndexOutOfBounds(r, n + 1, "insert", "TieredVector");
-
 		if (isFull()) {
 			doubleSize();
 		}
 
 		int i = r / m;
 		
-#if DEBUG
-		cout << "insertIdx: " << i << " r: " << r << " newR: " << r - i*m << endl;
-		cout << "Inserting from back" << endl;
-#endif
 		if (a[elem(i)].isFull()) {
 			int back = n / m;
 			if (a[elem(back)].isFull()) {
 				back++;
 			}
-#if DEBUG
-			cout << "Back: " << back << endl;
-#endif
 			for (int j = back; j > i; j--) {
 				a[elem(j)].insertFirst(a[elem(j - 1)].removeLast());
 			}
@@ -119,19 +93,12 @@ public:
 	}
 
 	int removeElemAt(int r) {
-#if DEBUG
-		cout << endl << "Removing at r: " << r << endl << toString() << endl << toStringPretty() << endl;
-#endif
-		checkIndexOutOfBounds(r, n, "remove", "TieredVector");
 		int i = r / m;
 		int e = a[elem(i)].removeElemAt(r - i*m);
 		for (int j = i; j < (n-1) / m; j++) {
 			a[elem(j)].insertLast(a[elem(j + 1)].removeFirst());
 		}
 		n--;
-#if DEBUG
-		cout << endl << "Removed: " << r << endl << toString() << endl << toStringPretty() << endl;
-#endif
 		return e;
 	}
 

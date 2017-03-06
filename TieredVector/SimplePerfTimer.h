@@ -37,9 +37,9 @@ private:
 	static int s_indent;
 };
 
-#define SIMPLEPERF_FUNCSTART SimplePerfTimer __xperfstart##__COUNTER__(__FUNCTION__" : %f\n", SIMPLEPERF_SHOWIMMEDIATE)
-#define SIMPLEPERF_SCOPED(str) SimplePerfTimer __xperfstart##__COUNTER__(str" : %f\n", SIMPLEPERF_SHOWIMMEDIATE)
-#define SIMPLEPERF_START(str) { SimplePerfTimer __xperfstart##__COUNTER__(str" : %f\n", SIMPLEPERF_SHOWIMMEDIATE)
+#define SIMPLEPERF_FUNCSTART SimplePerfTimer __xperfstart##__COUNTER__(__FUNCTION__" %f\n", SIMPLEPERF_SHOWIMMEDIATE)
+#define SIMPLEPERF_SCOPED(str) SimplePerfTimer __xperfstart##__COUNTER__(str" %f\n", SIMPLEPERF_SHOWIMMEDIATE)
+#define SIMPLEPERF_START(str) { SimplePerfTimer __xperfstart##__COUNTER__(str" %f", SIMPLEPERF_SHOWIMMEDIATE)
 #define SIMPLEPERF_END }
 #define SIMPLEPERF_REPORTALL SimplePerfTimer::ReportAll
 #define SIMPLEPERF_REPORTALL_ATEXIT atexit(SimplePerfTimer::ReportAll);
