@@ -49,25 +49,19 @@ public:
 
 	CircularDeque lowerHalf() {
 		CircularDeque b(l / 2);
-		if (h < l / 2) {
-			b.a = &a[h];
-		} else {
-			for (int i = 0; i < l / 2; i++) {
-				b.insertElemAt(i, getElemAt(i));
-			}
+
+		for (int i = 0; i < l / 2; i++) {
+			b.insertElemAt(i, getElemAt(i));
 		}
+
 		return b;
 	}
 
 	CircularDeque upperHalf() {
 		CircularDeque b(l / 2);
-		if (h + n < l) {
-			b.a = &a[h + l/2];
-		}
-		else {
-			for	(int i = 0; i < l / 2; i++) {
-				b.insertElemAt(i, getElemAt(i + l / 2));
-			}
+
+		for (int i = l / 2; i < l; i++) {
+			b.insertElemAt(i, getElemAt(i));
 		}
 
 		return b;
@@ -84,8 +78,9 @@ public:
 	}
 
 	void insertElemAt(int r, int e) {
-		//if (topLevel && isFull()) {
-		//	doubleSize();
+		checkIndexOutOfBounds(r, n + 1, "insert", "CircularDeque");
+		//if (toplevel && isfull()) {
+		//	doublesize();
 		//}
 
 		if (r >= l - r) {
@@ -114,6 +109,7 @@ public:
 	}
 
 	int removeElemAt(int r) {
+		checkIndexOutOfBounds(r, n, "remove", "CircularDeque");
 		//if (topLevel && n < l / 4) {
 		//	halveSize();
 		//}
@@ -132,6 +128,11 @@ public:
 		}
 		n--;
 		h = isEmpty() ? 0 : h;
+		if (n < 0) {
+			cout << "n is below 0 in CircularDeque!" << endl;
+			string s;
+			cin >> s;
+		}
 		return e;
 	}
 
@@ -140,6 +141,11 @@ public:
 		incH(1);
 		h = isEmpty() ? 0 : h;
 		n--;
+		if (n < 0) {
+			cout << "n is below 0 in CircularDeque!" << endl;
+			string s;
+			cin >> s;
+		}
 		return e;
 	}
 
@@ -147,6 +153,11 @@ public:
 		int e = a[(h + n - 1) % l];
 		h = isEmpty() ? 0 : h;
 		n--;
+		if (n < 0) {
+			cout << "n is below 0 in CircularDeque!" << endl;
+			string s;
+			cin >> s;
+		}
 		return e;
 	}
 
@@ -161,7 +172,7 @@ public:
 	string toStringPretty() {
 		string s = "{ ";
 		if (n > 0) {
-			s += to_string(a[h % l]);
+			s += to_string(a[h]);
 		}
 		for (int i = 1; i < n; i++) {
 			s += ", " + to_string(a[(i + h) % l]);

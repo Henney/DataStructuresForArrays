@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "K2TieredVector.cpp"
+#include "TieredVector.cpp"
 #include <set>
 #include <vector>
 #include <random>
@@ -12,17 +12,24 @@
 
 #define TESTS 1000
 #define INSERTIONS 1000
+#define DELETIONS 1000
 #define INTERVAL 1000
-#define AMOUNT 4
+#define AMOUNT 5
+
+#define ARRAY_AMOUNT 200000
+
+/*
+	Insertion
+*/
 
 double* benchmarkInsertionArray() {
-	int maxElems = MIN(200000, INTERVAL*TESTS); // Takes too long otherwise
+	int maxElems = MIN(ARRAY_AMOUNT, INTERVAL*TESTS); // Takes too long otherwise
 	int tests = maxElems / INTERVAL;
-	double* result = (double*) calloc(TESTS, sizeof 0.0);
+	double* result = new double[TESTS];
 
 	int l = 1;
 	int *a = new int[l];
-	for (int i = 1; i <= tests; i++) {
+	for (int i = 0; i < tests; i++) {
 		double start = TIMER_FUNC();
 		for (int j = 0; j < INSERTIONS; j++) {
 			int no = rand() % (l + 1);
@@ -33,17 +40,17 @@ double* benchmarkInsertionArray() {
 		result[i] = end - start;
 
 		for (int j = 0; j < INTERVAL - INSERTIONS; j++) {
-			int no = rand() % (l + 1);
 			a = arrayInsert(a, l, l, j);
 			l++;
 		}
 	}
+	delete[] a;
 	return result;
 }
 
 double* benchmarkInsertionVector() {
 	vector<int> v;
-	double* result = (double*)calloc(TESTS, sizeof 0.0);
+	double* result = new double[TESTS];
 
 	for (int i = 0; i < TESTS; i++) {
 		double start = TIMER_FUNC();
@@ -64,30 +71,37 @@ double* benchmarkInsertionVector() {
 
 double* benchmarkInsertionBST() {
 	set<int> s;
-	double* result = (double*)calloc(TESTS, sizeof 0.0);
+	double* result = new double[TESTS];
+
+	int total = TESTS * INTERVAL;
+	int* numbers = (int*)calloc(total, sizeof 0);
+	for (int i = 0; i < total; i++) {
+		numbers[i] = i;
+	}
+	random_shuffle(numbers, numbers + total); // Shuffle the numbers
 
 	for (int i = 0; i < TESTS; i++) {
 		double start = TIMER_FUNC();
 		unsigned int elems = s.size();
 		for (int j = elems; j < elems + INSERTIONS; j++) {
-			s.insert(j);
+			s.insert(numbers[j]);
 		}
 		double end = TIMER_FUNC();
 		result[i] = end - start;
 
 		elems = s.size();
 		for (int j = elems; j < elems + INTERVAL - INSERTIONS; j++) {
-			s.insert(j);
+			s.insert(numbers[j]);
 		}
 	}
 	return result;
 }
 
 double* benchmarkInsertionK2TieredVector() {
-	K2TieredVector tv(2);
-	double* result = (double*)calloc(TESTS, sizeof 0.0);
+	K2TieredVector tv;
+	double* result = new double[TESTS];
 
-	for (int i = 1; i <= TESTS; i++) {
+	for (int i = 0; i < TESTS; i++) {
 		double start = TIMER_FUNC();
 		for (int j = 0; j < INSERTIONS; j++) {
 			int no = rand() % (tv.n + 1);
@@ -104,10 +118,30 @@ double* benchmarkInsertionK2TieredVector() {
 }
 
 double* benchmarkInsertionBitTrickK2TieredVector() {
-	K2TieredVector tv(2);
-	double* result = (double*)calloc(TESTS, sizeof 0.0);
+	BitTrickK2TieredVector tv;
+	double* result = new double[TESTS];	
 
-	for (int i = 1; i <= TESTS; i++) {
+	for (int i = 0; i < TESTS; i++) {
+		double start = TIMER_FUNC();
+		for (int j = 0; j < INSERTIONS; j++) {
+			int no = rand() % (tv.n + 1);
+			tv.insertElemAt(no, j);
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
+
+		for (int j = 0; j < INTERVAL - INSERTIONS; j++) {
+			tv.insertLast(j);
+		}
+	}
+	return result;
+}
+
+double* benchmarkInsertion3TieredVector() {
+	TieredVector tv(3);
+	double* result = new double[TESTS];
+
+	for (int i = 0; i < TESTS; i++) {
 		double start = TIMER_FUNC();
 		for (int j = 0; j < INSERTIONS; j++) {
 			int no = rand() % (tv.n + 1);
@@ -127,7 +161,7 @@ void benchmarkInsertion()
 {
 
 	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
-	double* (*functions[AMOUNT])() = {
+	double* (*functions[6])() = {
 		&benchmarkInsertionArray
 		,
 		&benchmarkInsertionVector
@@ -135,22 +169,25 @@ void benchmarkInsertion()
 		&benchmarkInsertionBST
 		,
 		&benchmarkInsertionK2TieredVector
-		//, 
-		//&benchmarkInsertionBitTrickK2TieredVector
+		,
+		&benchmarkInsertionBitTrickK2TieredVector
+		,
+		&benchmarkInsertion3TieredVector
 	};
 	
 	double results[AMOUNT][TESTS];
 	for (int i = 0; i < AMOUNT; i++) {
+		srand(SEED);
 		double* result = functions[i]();
+		cout << i << " done" << endl;
 		for (int j = 0; j < TESTS; j++) {
 			results[i][j] = result[j];
 		}
-		cout << "One done" << endl;
 	}
 
 	ofstream outfile;
 	outfile.open("insertion.txt");
-	outfile << "size;array;vector;bst;tiered vector\n";
+	outfile << "size;array;vector;bst;tiered vector;bittrick tiered vector\n";
 	for (int i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * i;
 		for (int j = 0; j < AMOUNT; j++) {
@@ -160,186 +197,341 @@ void benchmarkInsertion()
 	}
 	outfile.close();
 }
+
 /*
-void benchmarkRemoval()
-{
-	int n = 1;
-	int x = 100;
-	int TESTS = 10;
-	int INTERVAL = 100000;
+	Removal
+*/
 
-	SIMPLEPERF_FUNCSTART;
-	cout << "Vector" << endl;
-	srand(1337);
+double* benchmarkRemovalArray() {
+	int maxElems = MIN(ARRAY_AMOUNT, INTERVAL*TESTS); // Takes too long otherwise
+	int tests = maxElems / INTERVAL;
+	double* result = new double[TESTS];
+
+	int l = INTERVAL * tests;
+	int *a = new int[l];
+
+	for (int i = 0; i < l; i++) {
+		a[i] = i;
+	}
+
+	for (int i = 0; i < tests; i++) {
+		double start = TIMER_FUNC();
+		for (int j = 0; j < DELETIONS; j++) {
+			int no = rand() % l;
+			a = arrayRemove(a, l, no);
+			l--;
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
+
+		for (int j = 0; j < INTERVAL - DELETIONS; j++) {
+			a = arrayRemove(a, l, l - 1);
+			l--;
+		}
+	}
+	delete[] a;
+	return result;
+}
+
+double* benchmarkRemovalVector() {
 	vector<int> v;
+	double* result = new double[TESTS];
 
-	for (int i = 0; i < x*INTERVAL; i++) {
+	for (int i = 0; i < INTERVAL * TESTS; i++) {
 		v.push_back(i);
 	}
 
-	for (int i = 1; i <= x; i++) {
-		int size = v.size();
-		cout << "[" << size << ",";
-
-		SIMPLEPERF_START();
-		for (int j = 0; j < TESTS; j++) {
-			int no = rand() % (v.size() + 1);
+	for (int i = 0; i < TESTS; i++) {
+		double start = TIMER_FUNC();
+		for (int j = 0; j < DELETIONS; j++) {
+			int no = rand() % v.size();
 			v.erase(v.begin() + no);
 		}
-		SIMPLEPERF_END;
+		double end = TIMER_FUNC();
+		result[i] = end - start;
 
-		for (int j = 0; j < INTERVAL - TESTS; j++) {
+		for (int j = 0; j < INTERVAL - DELETIONS; j++) {
 			v.pop_back();
 		}
+	}
+	assert(v.size() == 0);
+	return result;
+}
 
-		cout << "], " << endl;
+
+double* benchmarkRemovalBST() {
+	set<int> s;
+	double* result = new double[TESTS];
+	int total = TESTS * INTERVAL;
+
+	for (int i = 0; i < total; i++) {
+		s.insert(i);
 	}
 
-	cout << "Tiered vector" << endl;
-	srand(1337);
-	K2TieredVector tv(2);
+	int* numbers = (int*)calloc(total, sizeof 0);
+	for (int i = 0; i < total; i++) {
+		numbers[i] = i;
+	}
+	random_shuffle(numbers, numbers + total); // Shuffle the numbers
 
-	for (int i = 0; i < x*INTERVAL; i++) {
-		tv.insertElemAt(i, i);
+	for (int i = 0; i < TESTS; i++) {
+		unsigned int elems = s.size();
+		double start = TIMER_FUNC();
+		for (int j = 0; j < DELETIONS; j++) {
+			s.erase(numbers[elems - j]);
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
+
+		elems = s.size();
+		for (int j = 0; j < INTERVAL - DELETIONS; j++) {
+			s.erase(numbers[elems - j]);
+		}
+	}
+	return result;
+}
+
+double* benchmarkRemovalK2TieredVector() {
+	double* result = new double[TESTS];
+
+	K2TieredVector tv;
+
+	for (int i = 0; i < TESTS * INTERVAL; i++) {
+		tv.insertLast(i);
 	}
 
-	for (int i = 1; i <= x; i++) {
-		int size = tv.n;
-		cout << "[" << size << ",";
-
-		SIMPLEPERF_START();
-		for (int j = 0; j < TESTS; j++) {
+	for (int i = 0; i < TESTS; i++) {
+		double start = TIMER_FUNC();
+		for (int j = 0; j < DELETIONS; j++) {
 			int no = rand() % tv.n;
 			tv.removeElemAt(no);
 		}
-		SIMPLEPERF_END;
+		double end = TIMER_FUNC();
+		result[i] = end - start;
 
-		for (int j = 0; j < INTERVAL - TESTS; j++) {
+		for (int j = 0; j < INTERVAL - DELETIONS; j++) {
 			tv.removeLast();
 		}
-
-		cout << "], " << endl;
 	}
-	SIMPLEPERF_REPORTALL;
 
+	return result;
 }
 
-void benchmarkAccess()
-{
-	int n = 1;
-	int x = 100;
-	int INTERVAL = 100;
-	int TESTS = 1000;
-	const int l = 10000; // Must be x * INTERVAL
+double* benchmarkRemovalBitTrickK2TieredVector() {
+	double* result = new double[TESTS];
+	BitTrickK2TieredVector tv;
 
-	SIMPLEPERF_FUNCSTART;
-	cout << "Array" << endl;
-	for (int i = 1; i <= x; i++) {
-		int size = i * INTERVAL;
-		cout << "[" << size << ",";
-
-		srand(1337);
-		int a[10000];
-
-		for (int j = 0; j < size; j++) {
-			a[j] = j;
-		}
-
-		SIMPLEPERF_START();
-		for (int j = 0; j < TESTS; j++) {
-			int no = rand() % l;
-			a[no];
-		}
-		SIMPLEPERF_END;
-
-		cout << "], " << endl;
+	for (int i = 0; i < TESTS * INTERVAL; i++) {
+		tv.insertLast(i);
 	}
 
-	cout << "Vector" << endl;
-	for (int i = 1; i <= x; i++) {
-		int size = i * INTERVAL;
-		cout << "[" << size << ",";
+	for (int i = 0; i < TESTS; i++) {
+		double start = TIMER_FUNC();
+		for (int j = 0; j < DELETIONS; j++) {
+			int no = rand() % tv.n;
+			tv.removeElemAt(no);
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
 
-		srand(1337);
-		vector<int> v;
+		for (int j = 0; j < INTERVAL - DELETIONS; j++) {
+			tv.removeLast();
+		}
+	}
 
-		for (int j = 0; j < size; j++) {
-			v.insert(v.begin() + j, j);
+	return result;
+}
+
+void benchmarkRemoval()
+{
+	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
+	double* (*functions[AMOUNT])() = {
+		&benchmarkRemovalArray
+		, 
+		&benchmarkRemovalVector
+		,
+		&benchmarkRemovalBST
+		,
+		&benchmarkRemovalK2TieredVector
+		,
+		&benchmarkRemovalBitTrickK2TieredVector
+	};
+
+	double results[AMOUNT][TESTS];
+	for (int i = 0; i < AMOUNT; i++) {
+		srand(SEED);
+		double* result = functions[i]();
+		cout << i << " done" << endl;
+		for (int j = 0; j < TESTS; j++) {
+			results[i][j] = result[j];
+		}
+	}
+	return;
+	ofstream outfile;
+	outfile.open("removal.txt");
+	outfile << "size;array;vector;bst;tiered vector;bittrick tiered vector\n";
+	for (int i = 0; i < TESTS; i++) {
+		outfile << INTERVAL * (TESTS - i);
+		for (int j = 0; j < AMOUNT; j++) {
+			outfile << ";" << results[j][i];
+		}
+		outfile << "\n";
+	}
+	outfile.close();
+}
+
+/*
+	Access
+*/
+
+double* benchmarkAccessArray() {
+	double* result = (double*)calloc(TESTS, sizeof 0.0);
+
+	for (int i = 0; i < TESTS; i++) {
+		const int size = (i + 1) * INTERVAL;
+		int *a = new int[size];
+
+		double start = TIMER_FUNC();
+		for (int j = 0; j < TESTS; j++) {
+			int no = rand() % size;
+			a[no];
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
+		delete[] a;
+	}
+	return result;
+}
+
+double* benchmarkAccessVector() {
+	double* result = (double*)calloc(TESTS, sizeof 0.0);
+
+	vector<int> v;
+
+	for (int i = 0; i < TESTS; i++) {
+		for (int j = 0; j < INTERVAL; j++) {
+			v.push_back(j);
 		}
 
-		SIMPLEPERF_START();
+		double start = TIMER_FUNC();
 		for (int j = 0; j < TESTS; j++) {
 			int no = rand() % v.size();
 			v.at(no);
 		}
-		SIMPLEPERF_END;
-
-		cout << "], " << endl;
+		double end = TIMER_FUNC();
+		result[i] = end - start;
 	}
+	return result;
+}
 
-	cout << "Tiered vector" << endl;
-	for (int i = 1; i <= x; i++) {
-		int size = i * INTERVAL;
-		cout << "[" << size << ",";
+double* benchmarkAccessBST() {
+	double* result = (double*)calloc(TESTS, sizeof 0.0);
 
-		srand(1337);
-		K2TieredVector tv(2);
+	set<int> s;
 
-		for (int j = 0; j < size; j++) {
-			tv.insertElemAt(j, j);
+	for (int i = 0; i < TESTS; i++) {
+		for (int j = 0; j < INTERVAL; j++) {
+			s.insert(i*INTERVAL + j);
 		}
 
-		SIMPLEPERF_START();
+		double start = TIMER_FUNC();
+		for (int j = 0; j < TESTS; j++) {
+			int no = rand() % s.size();
+			s.find(no);
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
+	}
+	return result;
+}
+
+double* benchmarkAccessK2TieredVector() {
+	double* result = (double*)calloc(TESTS, sizeof 0.0);
+
+	K2TieredVector tv;
+
+	for (int i = 0; i < TESTS; i++) {
+		for (int j = 0; j < INTERVAL; j++) {
+			tv.insertLast(j);
+		}
+
+		double start = TIMER_FUNC();
 		for (int j = 0; j < TESTS; j++) {
 			int no = rand() % tv.n;
 			tv.getElemAt(no);
 		}
-		SIMPLEPERF_END;
-
-		cout << "], " << endl;
+		double end = TIMER_FUNC();
+		result[i] = end - start;
 	}
-	SIMPLEPERF_REPORTALL;
-
+	return result;
 }
 
-void benchmarkSize()
-{
-	int preInsert = 10000;
-	int INTERVAL = 50;
-	int TESTS = 100;
+double* benchmarkAccessBitTrickK2TieredVector() {
+	double* result = (double*)calloc(TESTS, sizeof 0.0);
 
-	SIMPLEPERF_FUNCSTART;
-	cout << "Tiered vector" << endl;
+	BitTrickK2TieredVector tv;
 
-	for (int n = INTERVAL; n < preInsert; n += INTERVAL) {
-		cout << "[" << n << ",";
-
-		K2TieredVector tv(2, n);
-
-		for (int i = 0; i < preInsert; i++) {
-			tv.insertElemAt(0, i);
+	for (int i = 0; i < TESTS; i++) {
+		for (int j = 0; j < INTERVAL; j++) {
+			tv.insertLast(j);
 		}
 
-		SIMPLEPERF_START();
-		for (int i = 0; i < TESTS; i++) {
-			tv.insertElemAt(0, i);
+		double start = TIMER_FUNC();
+		for (int j = 0; j < TESTS; j++) {
+			int no = rand() % tv.n;
+			tv.getElemAt(no);
 		}
-		SIMPLEPERF_END;
-
-		cout << "], " << endl;
+		double end = TIMER_FUNC();
+		result[i] = end - start;
 	}
-	SIMPLEPERF_REPORTALL;
-
-}*/
-
-int main()
-{
-	benchmarkInsertion();
-	//benchmarkRemoval();
-	//benchmarkAccess();
-	//benchmarkSize();
-
-	string s;
-	cin >> s;
-	return 0;
+	return result;
 }
+
+void benchmarkAccess()
+{
+	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
+	double* (*functions[AMOUNT])() = {
+		&benchmarkAccessArray
+		,
+		&benchmarkAccessVector
+		,
+		&benchmarkAccessBST
+		,
+		&benchmarkAccessK2TieredVector
+		, 
+		&benchmarkAccessBitTrickK2TieredVector
+	};
+	
+	double results[AMOUNT][TESTS];
+	for (int i = 0; i < AMOUNT; i++) {
+		srand(SEED);
+		double* result = functions[i]();
+		cout << i << " done" << endl;
+		for (int j = 0; j < TESTS; j++) {
+			results[i][j] = result[j];
+		}
+	}
+
+	ofstream outfile;
+	outfile.open("access.txt");
+	outfile << "size;array;vector;bst;tiered vector;bittrick tiered vector\n";
+	for (int i = 0; i < TESTS; i++) {
+		outfile << INTERVAL * i;
+		for (int j = 0; j < AMOUNT; j++) {
+			outfile << ";" << results[j][i];
+		}
+		outfile << "\n";
+	}
+	outfile.close();
+}
+
+//int main()
+//{
+//	//benchmarkInsertion();
+//	//benchmarkRemoval();
+//	//benchmarkAccess();
+//	
+//	string s;
+//	cin >> s;
+//	return 0;
+//}

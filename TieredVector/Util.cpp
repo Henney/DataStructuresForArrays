@@ -4,6 +4,7 @@
 #include <new>
 #include <array>
 #include <string>
+#include <assert.h>
 
 using namespace std;
 
@@ -53,15 +54,18 @@ int* arrayInsert(int *a, int l, int r, int e) {
 	return newA;
 }
 
+int* arrayRemove(int *a, int l, int r) {
+	int *newA = new int[l - 1];
+	for (int k = 0; k < r; k++) {
+		newA[k] = a[k];
+	}
+	for (int k = r; k < l - 1; k++) {
+		newA[k] = a[k + 1];
+	}
+	delete[] a;
+	return newA;
+}
+
 class CircularDeque;
 class K2TieredVector;
 class BitTrickK2TieredVector;
-
-static void checkIndexOutOfBounds(int r, int size, string op, string type) {
-	if (r >= size || r < 0) {
-		cerr << "Tried to " << op << " element at rank " << r << " on array of size " << size << " in " << type << endl;
-		string s;
-		cin >> s;
-		exit(-1);
-	}
-}

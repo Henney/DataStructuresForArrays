@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "K2TieredVector.cpp"
+#include "TieredVector.cpp"
 
 void testK1() {
 	CircularDeque cd = CircularDeque(true);
@@ -43,4 +43,32 @@ void testK2() {
 		tv.removeLast();
 		cout << tv.toString() << endl << tv.toStringPretty() << endl;
 	}
+}
+
+void testAnyK() {
+	TieredVector tv = TieredVector(2);
+
+	int n = 65;
+
+	for (int i = 0; i < n; i++) {
+		int no = rand() % (tv.n + 1);
+		cout << "Inserting " << i << " at " << no << endl;
+		tv.insertElemAt(no, i);
+		cout << tv.toStringPretty() << endl;
+	}
+
+
+	//for (int i = 0; i < n; i++) {
+	//	tv.removeLast();
+	//	cout << tv.toString() << endl << tv.toStringPretty() << endl;
+	//}
+}
+
+int main()
+{
+	testAnyK();
+
+	string s;
+	cin >> s;
+	return 0;
 }
