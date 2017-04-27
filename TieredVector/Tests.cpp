@@ -13,6 +13,7 @@
 #define TESTS 1000
 #define INSERTIONS 1000
 #define DELETIONS 1000
+#define ACCESSES 100000
 #define INTERVAL 1000
 #define AMOUNT 5
 
@@ -138,7 +139,7 @@ double* benchmarkInsertionBitTrickK2TieredVector() {
 }
 
 double* benchmarkInsertion3TieredVector() {
-	TieredVector tv(3);
+	KTieredVector tv(3);
 	double* result = new double[TESTS];
 
 	for (int i = 0; i < TESTS; i++) {
@@ -161,7 +162,7 @@ void benchmarkInsertion()
 {
 
 	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
-	double* (*functions[6])() = {
+	double* (*functions[AMOUNT])() = {
 		&benchmarkInsertionArray
 		,
 		&benchmarkInsertionVector
@@ -171,8 +172,8 @@ void benchmarkInsertion()
 		&benchmarkInsertionK2TieredVector
 		,
 		&benchmarkInsertionBitTrickK2TieredVector
-		,
-		&benchmarkInsertion3TieredVector
+		//,
+		//&benchmarkInsertion3TieredVector
 	};
 	
 	double results[AMOUNT][TESTS];
@@ -366,7 +367,7 @@ void benchmarkRemoval()
 			results[i][j] = result[j];
 		}
 	}
-	return;
+
 	ofstream outfile;
 	outfile.open("removal.txt");
 	outfile << "size;array;vector;bst;tiered vector;bittrick tiered vector\n";
@@ -392,7 +393,7 @@ double* benchmarkAccessArray() {
 		int *a = new int[size];
 
 		double start = TIMER_FUNC();
-		for (int j = 0; j < TESTS; j++) {
+		for (int j = 0; j < ACCESSES; j++) {
 			int no = rand() % size;
 			a[no];
 		}
@@ -414,7 +415,7 @@ double* benchmarkAccessVector() {
 		}
 
 		double start = TIMER_FUNC();
-		for (int j = 0; j < TESTS; j++) {
+		for (int j = 0; j < ACCESSES; j++) {
 			int no = rand() % v.size();
 			v.at(no);
 		}
@@ -435,7 +436,7 @@ double* benchmarkAccessBST() {
 		}
 
 		double start = TIMER_FUNC();
-		for (int j = 0; j < TESTS; j++) {
+		for (int j = 0; j < ACCESSES; j++) {
 			int no = rand() % s.size();
 			s.find(no);
 		}
@@ -456,7 +457,7 @@ double* benchmarkAccessK2TieredVector() {
 		}
 
 		double start = TIMER_FUNC();
-		for (int j = 0; j < TESTS; j++) {
+		for (int j = 0; j < ACCESSES; j++) {
 			int no = rand() % tv.n;
 			tv.getElemAt(no);
 		}
@@ -477,7 +478,7 @@ double* benchmarkAccessBitTrickK2TieredVector() {
 		}
 
 		double start = TIMER_FUNC();
-		for (int j = 0; j < TESTS; j++) {
+		for (int j = 0; j < ACCESSES; j++) {
 			int no = rand() % tv.n;
 			tv.getElemAt(no);
 		}
@@ -525,13 +526,13 @@ void benchmarkAccess()
 	outfile.close();
 }
 
-//int main()
-//{
-//	//benchmarkInsertion();
-//	//benchmarkRemoval();
-//	//benchmarkAccess();
-//	
-//	string s;
-//	cin >> s;
-//	return 0;
-//}
+int main()
+{
+	//benchmarkInsertion();
+	//benchmarkRemoval();
+	benchmarkAccess();
+	
+	string s;
+	cin >> s;
+	return 0;
+}

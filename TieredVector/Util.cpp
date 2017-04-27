@@ -66,6 +66,6 @@ int* arrayRemove(int *a, int l, int r) {
 	return newA;
 }
 
-class CircularDeque;
+class Deque;
 class K2TieredVector;
 class BitTrickK2TieredVector;

@@ -1,25 +1,25 @@
 #include "stdafx.h"
-#include "CircularDeque.cpp"
+#include "Deque.cpp"
 
-class K2TieredVector {
-private:
-	CircularDeque *a;
+class K2TieredVector : public TieredVector {
+protected:
+	Deque *a;
 
 	void init(int size) {
 		this->m = size;
 		this->l = size;
-		a = new CircularDeque[size];
+		a = new Deque[size];
 	}
 
 	void doubleSize() {
-		CircularDeque *newA = new CircularDeque[m * 2];
+		Deque *newA = new Deque[m * 2];
 		for (int i = 0; i < m; i++) {
 			newA[i] = a[i];
 			newA[i].doubleSize();
 		}
 		for (int i = m; i < m * 2; i++) {
 			delete[] (newA[i].a);
-			newA[i] = CircularDeque(l * 2);
+			newA[i] = Deque(l * 2);
 		}
 		delete[] a;
 		a = newA;
@@ -46,11 +46,11 @@ private:
 	}
 
 	void halveSize() {
-		CircularDeque *newA = new CircularDeque[m / 2];
+		Deque *newA = new Deque[m / 2];
 
 		for (int i = 0; i < m / 2; i++) {
 			delete[] (newA[i].a);
-			newA[i] = CircularDeque(l / 2);
+			newA[i] = Deque(l / 2);
 		}
 
 		for (int i = 0; i < m / 4; i++) {
@@ -66,16 +66,14 @@ private:
 	}
 
 public:
-	int n = 0;		// Number of elements
 	int m = 0;		// Number of subvectors
-	int l = 0;		// Size of subvectors
 
 	K2TieredVector(int size) {
 		init(size);
 		for (int i = 0; i < size; i++) {
 			delete[] (a[i].a);
 
-			a[i] = CircularDeque(size);
+			a[i] = Deque(size);
 		}
 	}
 
@@ -132,7 +130,7 @@ public:
 			halveSize();
 		}
 
-		int i = (r-1) / m;
+		int i = r / m;
 		int e = a[i].removeElemAt(r - i*m);
 		for (int j = i; j < (n-1) / m; j++) {
 			a[j].insertLast(a[j + 1].removeFirst());
@@ -180,33 +178,29 @@ public:
 };
 
 
-class BitTrickK2TieredVector {
-private:
-	CircularDeque *a;
+class BitTrickK2TieredVector : public K2TieredVector {
+protected:
+	BitTrickDeque *a;
 
 	int shift;
-
-	//int elem(int r) {
-	//	return (l + r) & (l - 1); // TODO: What? Why is this even needed???
-	//}
 
 	void doubleSize() {
 		int oldM = m;
 		m = m << 1;
 		l = l << 1;
 
-		CircularDeque *newA = new CircularDeque[m];
+		BitTrickDeque *newA = new BitTrickDeque[m];
 		for (int i = 0; i < oldM; i++) {
 			newA[i] = a[i];
 			newA[i].doubleSize();
 		}
 		for (int i = oldM; i < m; i++) {
 			delete[](newA[i].a);
-			newA[i] = CircularDeque(l);
+			newA[i] = BitTrickDeque(l);
 		}
 		delete[] a;
 		a = newA;
-
+		
 		// Move everything to the lower 1/4 of the current TV
 		int nextTvWithElems = 1;
 		int moved = 0;
@@ -220,7 +214,7 @@ private:
 				}
 
 				while (a[nextTvWithElems].isEmpty()) {
-					nextTvWithElems = (nextTvWithElems + 1) & (oldM - 1);
+					nextTvWithElems = (nextTvWithElems + 1) & (m - 1);
 				}
 			}
 		}
@@ -231,11 +225,11 @@ private:
 		m = m >> 1;
 		l = l >> 1;
 
-		CircularDeque *newA = new CircularDeque[m];
+		BitTrickDeque *newA = new BitTrickDeque[m];
 
 		for (int i = 0; i < m; i++) {
 			delete[](newA[i].a);
-			newA[i] = CircularDeque(l);
+			newA[i] = BitTrickDeque(l);
 		}
 
 		for (int i = 0; i < m >> 1; i++) {
@@ -250,15 +244,14 @@ private:
 	}
 
 public:
-	int n = 0;		// Number of elements
-	int m = 0;		// Number of subvectors
-	int l = 0;		// Size of subvectors
+	int l = 0;
+	int m = 0;
 
 	BitTrickK2TieredVector() {
 		this->m = DEFAULT_SIZE;
 		this->l = DEFAULT_SIZE;
 		this->shift = (int)log2(DEFAULT_SIZE);
-		this->a = new CircularDeque[DEFAULT_SIZE];
+		this->a = new BitTrickDeque[DEFAULT_SIZE];
 	}
 
 	~BitTrickK2TieredVector(void) {
@@ -269,7 +262,7 @@ public:
 	}
 
 	int getElemAt(int r) {
-		int i = r << shift;
+		int i = r >> shift;
 		return a[i].getElemAt(r - i*l);
 	}
 
@@ -289,7 +282,7 @@ public:
 				a[j].insertFirst(a[j - 1].removeLast());
 			}
 		}
-		a[i].insertElemAt(r - i*m, e);
+		a[i].insertElemAt(r - (i << shift), e);
 		n++;
 	}
 
@@ -306,12 +299,12 @@ public:
 	}
 
 	int removeElemAt(int r) {
-		if (n < (m * l) >> 3) {		// Divide by 8
+		if (n < (m << shift) >> 3) {		// Divide by 8
 			halveSize();
 		}
 
-		int i = (r - 1) >> shift;
-		int e = a[i].removeElemAt(r - i*m);
+		int i = r >> shift;
+		int e = a[i].removeElemAt(r - (i << shift));
 		for (int j = i; j < (n - 1) >> shift; j++) {
 			a[j].insertLast(a[j + 1].removeFirst());
 		}

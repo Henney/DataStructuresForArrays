@@ -1,15 +1,15 @@
 #include "stdafx.h"
 #include "K2TieredVector.cpp"
 
-class TieredVector {
+class KTieredVector {
 private:
 	
 	int k;
 	int h;
 	int size;		// Amount of subvectors with elements. Maximum m
 
-	TieredVector *tv;
-	CircularDeque *cd;
+	KTieredVector *tv;
+	Deque *cd;
 
 	int elem(int r) {
 		return (h + r) % l;
@@ -28,38 +28,44 @@ private:
 			throw invalid_argument("k must be at least 2");
 		}
 		else if (k == 2) {
-			cd = new CircularDeque[DEFAULT_SIZE];
+			cd = new Deque[DEFAULT_SIZE];
 		}
 		else {
-			tv = new TieredVector[DEFAULT_SIZE] { k - 1, k - 1, k - 1, k - 1 };
+			tv = new KTieredVector[DEFAULT_SIZE] { k - 1, k - 1, k - 1, k - 1 };
 		}
 	}
 
 	void doubleSize() {
 		cout << "Doubling size" << endl;
-		CircularDeque *newA = new CircularDeque[m * 2];
-		for (int i = 0; i < m * 2; i++) {
-			delete[](newA[i].a);
-			newA[i] = CircularDeque(l * 2);
-		}
 
-		// Move everything to the lower 1/4 of the current TV
-		int limit = n;
-		int moved = 0;
-		int cdToRemoveFrom = 0;
-		CircularDeque oldCd = cd[elem(cdToRemoveFrom)];
-		for (int i = 0; moved < limit; i++) {
-			while (!newA[i].isFull() && moved < limit) {
-				newA[i].insertLast(oldCd.removeFirst());
-				moved++;
-				if (oldCd.isEmpty()) {
-					cdToRemoveFrom++;
-					oldCd = cd[elem(cdToRemoveFrom)];
+		if (k == 2) {
+			Deque *newA = new Deque[m * 2];
+			for (int i = 0; i < m * 2; i++) {
+				delete[](newA[i].a);
+				newA[i] = Deque(l * 2);
+			}
+
+			// Move everything to the lower 1/4 of the current TV
+			int limit = n;
+			int moved = 0;
+			int cdToRemoveFrom = 0;
+			Deque oldCd = cd[elem(cdToRemoveFrom)];
+			for (int i = 0; moved < limit; i++) {
+				while (!newA[i].isFull() && moved < limit) {
+					newA[i].insertLast(oldCd.removeFirst());
+					moved++;
+					if (oldCd.isEmpty()) {
+						cdToRemoveFrom++;
+						oldCd = cd[elem(cdToRemoveFrom)];
+					}
 				}
 			}
+			delete[] cd;
+			cd = newA;
 		}
-		delete[] cd;
-		cd = newA;
+		else {
+			// TODO
+		}
 
 		m *= 2;
 		l *= 2;
@@ -68,11 +74,11 @@ private:
 	}
 
 	void halveSize() {
-		CircularDeque *newA = new CircularDeque[m / 2];
+		Deque *newA = new Deque[m / 2];
 
 		for (int i = 0; i < m / 2; i++) {
 			delete[](newA[i].a);
-			newA[i] = CircularDeque(l / 2);
+			newA[i] = Deque(l / 2);
 		}
 
 		for (int i = 0; i < m / 4; i++) {
@@ -92,11 +98,11 @@ public:
 	int m = 0;		// Number of subvectors
 	int l = 0;		// Size of subvectors
 
-	TieredVector(int k) {
+	KTieredVector(int k) {
 		init(k);
 	}
 
-	~TieredVector(void) {
+	~KTieredVector(void) {
 		if (k == 2) {
 			delete[] cd;
 		}
@@ -262,6 +268,55 @@ public:
 	int removeElemAt(int r) {
 		if (tooEmpty()) {
 			halveSize();
+		}
+
+		if (k == 2) {
+			int l0 = cd[h].n;
+			int i = ceil((double)(r + 1 - l0) / l);
+			int newR = i == 0 ? r : (r - l0) % l;
+
+			bool removeFront = r < n - r;
+
+			if (removeFront) {
+				cout << "Removing from front" << endl;
+				if (cd[h].isFull()) {
+					cout << "front is full - decrementing head" << endl;
+					incH(-1);
+					i++;
+				}
+				if (i > 0) {
+					newR--;
+					if (newR < 0) {
+						i--;
+						newR = i == 0 ? cd[h].n : l - 1;
+						cout << "newR is 0 so inserting at the end of the previous vector instead. i: " << i << " newR: " << newR << endl;
+					}
+				}
+				for (int j = 0; j < i; j++) {
+					cout << "Moving element backward" << endl;
+					cd[elem(j)].insertLast(cd[elem(j + 1)].removeFirst());
+					cout << "Done moving" << endl;
+				}
+			}
+			else {
+				cout << "Inserting from back" << endl;
+				int back = ceil((double)(n - l0) / l); // TODO: This is wrong
+
+
+				if (cd[elem(back)].isFull()) {
+					cout << "back is full - incrementing back" << endl;
+					back++;
+				}
+				for (int j = back; j > i; j--) {
+					cout << "Moving element forward" << endl;
+					cd[elem(j)].insertFirst(cd[elem(j - 1)].removeLast());
+					cout << "Done moving" << endl;
+				}
+			}
+
+			cout << toStringPretty() << endl;
+			cout << "i: " << i << " newR: " << newR << endl;
+			//cd[elem(i)].insertElemAt(newR, e);
 		}
 
 		int i = (r - 1) / m;
