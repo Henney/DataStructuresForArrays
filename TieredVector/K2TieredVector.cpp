@@ -66,7 +66,9 @@ protected:
 	}
 
 public:
+	int n = 0;	// Amount of elements (size)
 	int m = 0;		// Number of subvectors
+	int l = 0;	// Capacity/length of the subvectors
 
 	K2TieredVector(int size) {
 		init(size);

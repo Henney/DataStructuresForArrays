@@ -8,6 +8,8 @@ private:
 	int h;
 	int size;		// Amount of subvectors with elements. Maximum m
 
+	bool topLevel;
+
 	KTieredVector *tv;
 	Deque *cd;
 
@@ -19,24 +21,30 @@ private:
 		h = (h + inc + m) % m;
 	}
 	
-	void init(int k) {
+	void init(int k, int size, bool topLevel) {
+		this->topLevel = topLevel;
 		this->h = 0;
 		this->k = k;
-		this->m = DEFAULT_SIZE;
-		this->l = DEFAULT_SIZE;
+		this->m = size;
+		this->l = size;
 		if (k < 2) {
 			throw invalid_argument("k must be at least 2");
 		}
 		else if (k == 2) {
-			cd = new Deque[DEFAULT_SIZE];
+			cd = new Deque[size];
 		}
 		else {
-			tv = new KTieredVector[DEFAULT_SIZE] { k - 1, k - 1, k - 1, k - 1 };
+			tv = (KTieredVector*)malloc(size * sizeof this);
+			for (int i = 0; i < size; i++) {
+				KTieredVector* newTv = new KTieredVector(k - 1, size, false);
+				tv[i] = *newTv;
+			}
 		}
 	}
 
 	void doubleSize() {
-		cout << "Doubling size" << endl;
+		if (!topLevel)
+			return;
 
 		if (k == 2) {
 			Deque *newA = new Deque[m * 2];
@@ -64,7 +72,28 @@ private:
 			cd = newA;
 		}
 		else {
-			// TODO
+			KTieredVector *newB = (KTieredVector*)calloc(m * 2, sizeof this);
+			for (int i = 0; i < m * 2; i++) {
+				newB[i] = KTieredVector(k - 1, l * 2, false);
+			}
+
+			// Move everything to the lower 1/4 of the current TV
+			int limit = n;
+			int moved = 0;
+			int tvToRemoveFrom = 0;
+			KTieredVector oldTv = tv[elem(tvToRemoveFrom)];
+			for (int i = 0; moved < limit; i++) {
+				while (!newB[i].isFull() && moved < limit) {
+					newB[i].insertLast(oldTv.removeFirst());
+					moved++;
+					if (oldTv.isEmpty()) {
+						tvToRemoveFrom++;
+						oldTv = tv[elem(tvToRemoveFrom)];
+					}
+				}
+			}
+			delete[] tv;
+			tv = newB;
 		}
 
 		m *= 2;
@@ -74,23 +103,59 @@ private:
 	}
 
 	void halveSize() {
-		Deque *newA = new Deque[m / 2];
+		if (!topLevel)
+			return;
 
-		for (int i = 0; i < m / 2; i++) {
-			delete[](newA[i].a);
-			newA[i] = Deque(l / 2);
-		}
+		if (k == 2) {
+			Deque *newA = new Deque[m / 2];
 
-		for (int i = 0; i < m / 4; i++) {
-			newA[i] = cd[elem(i / 2)].lowerHalf();
-			i++;
-			newA[i] = cd[elem(i / 2)].upperHalf(); // TODO: elem(i / 2) doesn't quite seem right. Might be a bug
+			for (int i = 0; i < m / 2; i++) {
+				delete[](newA[i].a);
+				newA[i] = Deque(l / 2);
+			}
+
+			int to = 0;
+			for (int i = 0; i < n; i++) {
+				newA[to].insertElemAt(i % (l / 2), getElemAt(i));
+				if (newA[to].isFull())
+					to++;
+			}
+
+			delete[] cd;
+			cd = newA;
 		}
-		delete[] cd;
-		cd = newA;
+		else {
+			KTieredVector *newB = (KTieredVector*)calloc(m / 2, sizeof this);
+			for (int i = 0; i < m / 2; i++) {
+				newB[i] = KTieredVector(2, l / 2, false);
+			}
+
+			int to = 0;
+			for (int i = 0; i < n; i++) {
+				newB[to].insertElemAt(i % (l / 2), getElemAt(i));
+				if (newB[to].isFull())
+					to++;
+			}
+
+			delete[] tv;
+			tv = newB;
+		}
 
 		m /= 2;
 		l /= 2;
+		h = 0;
+	}
+
+	KTieredVector(int k, int size, bool topLevel) {
+		init(k, size, topLevel);
+	}
+
+	KTieredVector(int k, int size) {
+		init(k, size, true);
+	}
+
+	KTieredVector(int k, bool topLevel) {
+		init(k, DEFAULT_SIZE, topLevel);
 	}
 
 public:
@@ -99,7 +164,7 @@ public:
 	int l = 0;		// Size of subvectors
 
 	KTieredVector(int k) {
-		init(k);
+		init(k, DEFAULT_SIZE, true);
 	}
 
 	~KTieredVector(void) {
@@ -127,6 +192,8 @@ public:
 	}
 	
 	void insertElemAt(int r, int e) {
+		cout << "Inserting " << e << " at " << r << ". k: " << k << endl;
+		cout << toStringPretty() << endl;
 		checkIndexOutOfBounds(r, n + 1, "insert", "TieredVector");
 		if (r == n) {
 			return insertLast(e);
@@ -145,12 +212,9 @@ public:
 				i = ceil((double)(r + 1 - l0) / l);
 				newR = i == 0 ? r : (r - l0) % l;
 			}
-			cout << "l0: " << l0 << " i: " << i << " newR: " << newR << endl;
 
 			if (insertFront) {
-				cout << "Inserting from front" << endl;
 				if (cd[h].isFull()) {
-					cout << "front is full - decrementing head" << endl;
 					incH(-1);
 					i++;
 				}
@@ -159,33 +223,24 @@ public:
 					if (newR < 0) {
 						i--;
 						newR = i == 0 ? cd[h].n : l - 1;
-						cout << "newR is 0 so inserting at the end of the previous vector instead. i: " << i << " newR: " << newR << endl;
 					}
 				}
 				for (int j = 0; j < i; j++) {
-					cout << "Moving element backward" << endl;
 					cd[elem(j)].insertLast(cd[elem(j + 1)].removeFirst());
-					cout << "Done moving" << endl;
 				}
 			}
 			else {
-				cout << "Inserting from back" << endl;
-				int back = ceil((double)(n - l0) / l); // TODO: This is wrong
+				int back = ceil((double)(n - l0) / l);
 
 
 				if (cd[elem(back)].isFull()) {
-					cout << "back is full - incrementing back" << endl;
 					back++;
 				}
 				for (int j = back; j > i; j--) {
-					cout << "Moving element forward" << endl;
 					cd[elem(j)].insertFirst(cd[elem(j - 1)].removeLast());
-					cout << "Done moving" << endl;
 				}
 			}
 
-			cout << toStringPretty() << endl;
-			cout << "i: " << i << " newR: " << newR << endl;
 			cd[elem(i)].insertElemAt(newR, e);
 		}
 		else {
@@ -201,12 +256,9 @@ public:
 				i = ceil((double)(r + 1 - l0) / l);
 				newR = i == 0 ? r : (r - l0) % l;
 			}
-			cout << "l0: " << l0 << " i: " << i << " newR: " << newR << endl;
 
 			if (insertFront) {
-				cout << "Inserting from front" << endl;
 				if (tv[h].isFull()) {
-					cout << "front is full - decrementing head" << endl;
 					incH(-1);
 					i++;
 				}
@@ -215,33 +267,23 @@ public:
 					if (newR < 0) {
 						i--;
 						newR = i == 0 ? tv[h].n : l - 1;
-						cout << "newR is 0 so inserting at the end of the previous vector instead. i: " << i << " newR: " << newR << endl;
 					}
 				}
 				for (int j = 0; j < i; j++) {
-					cout << "Moving element backward" << endl;
 					tv[elem(j)].insertLast(tv[elem(j + 1)].removeFirst());
-					cout << "Done moving" << endl;
 				}
 			}
 			else {
-				cout << "Inserting from back" << endl;
-				int back = ceil((double)(n - l0) / l); // TODO: This is wrong
-
+				int back = ceil((double)(n - l0) / l);
 
 				if (tv[elem(back)].isFull()) {
-					cout << "back is full - incrementing back" << endl;
 					back++;
 				}
 				for (int j = back; j > i; j--) {
-					cout << "Moving element forward" << endl;
 					tv[elem(j)].insertFirst(tv[elem(j - 1)].removeLast());
-					cout << "Done moving" << endl;
 				}
 			}
 
-			cout << toStringPretty() << endl;
-			cout << "i: " << i << " newR: " << newR << endl;
 			tv[elem(i)].insertElemAt(newR, e);
 		}
 
@@ -253,77 +295,96 @@ public:
 	}
 
 	void insertLast(int e) {
-		cout << "isFull: " << isFull() << " lastFull: " << lastFull() << endl;
 		if (isFull() && lastFull()) {
 			doubleSize();
 		}
 
 		int i = n / l;
-		if (cd[elem(i)].isFull())
-			i++;
-		cd[elem(i)].insertLast(e);
+		if (k == 2) {
+			if (cd[elem(i)].isFull())
+				i++;
+			cd[elem(i)].insertLast(e);
+		}
+		else {
+			if (tv[elem(i)].isFull())
+				i++;
+			tv[elem(i)].insertLast(e);
+		}
 		n++;
 	}
 
 	int removeElemAt(int r) {
+		cout << "Removing at " << r << ". k: " << k << endl;
+		cout << toStringPretty() << endl;
 		if (tooEmpty()) {
 			halveSize();
 		}
+
+		int e;
+		bool removeFront = r < n - r;
 
 		if (k == 2) {
 			int l0 = cd[h].n;
 			int i = ceil((double)(r + 1 - l0) / l);
 			int newR = i == 0 ? r : (r - l0) % l;
 
-			bool removeFront = r < n - r;
+			if (removeFront) {
+				e = cd[elem(i)].removeElemAt(newR);
+
+				for (int j = i; j > 0; j--) {
+					cd[elem(j)].insertFirst(cd[elem(j - 1)].removeLast());
+				}
+
+				if (cd[h].isEmpty()) {
+					incH(1);
+				}
+
+			}
+			else {
+				e = cd[elem(i)].removeElemAt(newR);			
+			
+				int back = ceil((double)(n - l0) / l);
+
+				if (cd[elem(back)].isEmpty()) {
+					back--;
+				}
+			
+				for (int j = i; j < back; j++) {
+					cd[elem(j)].insertLast(cd[elem(j + 1)].removeFirst());
+				}
+			}
+		}
+		else {
+			int l0 = tv[h].n;
+			int i = ceil((double)(r + 1 - l0) / l);
+			int newR = i == 0 ? r : (r - l0) % l;
 
 			if (removeFront) {
-				cout << "Removing from front" << endl;
-				if (cd[h].isFull()) {
-					cout << "front is full - decrementing head" << endl;
-					incH(-1);
-					i++;
+				e = tv[elem(i)].removeElemAt(newR);
+
+				for (int j = i; j > 0; j--) {
+					tv[elem(j)].insertFirst(tv[elem(j - 1)].removeLast());
 				}
-				if (i > 0) {
-					newR--;
-					if (newR < 0) {
-						i--;
-						newR = i == 0 ? cd[h].n : l - 1;
-						cout << "newR is 0 so inserting at the end of the previous vector instead. i: " << i << " newR: " << newR << endl;
-					}
-				}
-				for (int j = 0; j < i; j++) {
-					cout << "Moving element backward" << endl;
-					cd[elem(j)].insertLast(cd[elem(j + 1)].removeFirst());
-					cout << "Done moving" << endl;
+
+				if (tv[h].isEmpty()) {
+					incH(1);
 				}
 			}
 			else {
-				cout << "Inserting from back" << endl;
-				int back = ceil((double)(n - l0) / l); // TODO: This is wrong
+				e = tv[elem(i)].removeElemAt(newR);
 
+				int back = ceil((double)(n - l0) / l);
 
-				if (cd[elem(back)].isFull()) {
-					cout << "back is full - incrementing back" << endl;
-					back++;
+				if (tv[elem(back)].isEmpty()) {
+					back--;
 				}
-				for (int j = back; j > i; j--) {
-					cout << "Moving element forward" << endl;
-					cd[elem(j)].insertFirst(cd[elem(j - 1)].removeLast());
-					cout << "Done moving" << endl;
+
+				for (int j = i; j < back; j++) {
+					tv[elem(j)].insertLast(tv[elem(j + 1)].removeFirst());
 				}
 			}
-
-			cout << toStringPretty() << endl;
-			cout << "i: " << i << " newR: " << newR << endl;
-			//cd[elem(i)].insertElemAt(newR, e);
 		}
-
-		int i = (r - 1) / m;
-		int e = cd[elem(i)].removeElemAt(r - i*m);
-		for (int j = i; j < (n - 1) / m; j++) {
-			cd[elem(j)].insertLast(cd[elem(j + 1)].removeFirst());
-		}
+		
 		n--;
 		return e;
 	}
@@ -336,13 +397,17 @@ public:
 		return removeElemAt(n);
 	}
 
-	bool isFull() { // Needs a good definition
+	bool isFull() {
 		if (k == 2) {
 			return cd[h].n > 0 && cd[(h - 1 + m) % m].n > 0;
 		}
 		else {
 			return tv[h].n > 0 && tv[(h - 1 + m) % m].n > 0;
 		}
+	}
+
+	bool isEmpty() {
+		return n == 0;
 	}
 
 	bool lastFull() {
@@ -370,22 +435,42 @@ public:
 
 	string toStringPretty() {
 		string s = "{ ";
-		if (m > 0) {
-			s += cd[h].toStringPretty();
+		if (k == 0) {
+			if (m > 0) {
+				s += cd[h].toStringPretty();
+			}
+			for (int i = 1; i < m; i++) {
+				s += ", " + cd[elem(i)].toStringPretty();
+			}
 		}
-		for (int i = 1; i < m; i++) {
-			s += ", " + cd[elem(i)].toStringPretty();
+		else {
+			if (m > 0) {
+				s += tv[h].toStringPretty();
+			}
+			for (int i = 1; i < m; i++) {
+				s += ", " + tv[elem(i)].toStringPretty();
+			}
 		}
 		return s += " }";
 	}
 
 	string toString() {
 		string s = "{ ";
-		if (m > 0) {
-			s += cd[0].toString();
+		if (k == 2) {
+			if (m > 0) {
+				s += cd[0].toString();
+			}
+			for (int i = 1; i < m; i++) {
+				s += ", " + cd[i].toString();
+			}
 		}
-		for (int i = 1; i < m; i++) {
-			s += ", " + cd[i].toString();
+		else {
+			if (m > 0) {
+				s += tv[0].toString();
+			}
+			for (int i = 1; i < m; i++) {
+				s += ", " + tv[i].toString();
+			}
 		}
 		return s += " }";
 	}

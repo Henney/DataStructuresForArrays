@@ -3,13 +3,11 @@
 
 class TieredVector {
 public:
-	int n = 0;	// Amount of elements (size)
-	int l = 0;	// Capacity/length of the current deque
 
-	int operator[](int index)
-	{
-		return getElemAt(index);
-	}
+	//int operator[](int index)
+	//{
+	//	return getElemAt(index);
+	//}
 
 	virtual int getElemAt(int r) = 0;
 	virtual void insertElemAt(int r, int e) = 0;
@@ -19,12 +17,14 @@ public:
 class Deque : public TieredVector {
 protected:
 	int h = 0;
+	int l = 0;	// Capacity/length of the current deque
 	bool topLevel = false;
 
 	void incH(int inc) {
 		h = (h + l + inc) % l;
 	}
 public:
+	int n = 0;	// Amount of elements (size)
 	int *a;		// The array
 
 	void init(int capacity) {
@@ -91,9 +91,9 @@ public:
 
 	void insertElemAt(int r, int e) {
 		checkIndexOutOfBounds(r, n + 1, "insert", "CircularDeque");
-		//if (toplevel && isfull()) {
-		//	doublesize();
-		//}
+		if (isFull()) {
+			doubleSize();
+		}
 
 		if (r >= l - r) {
 			for (int i = h + n; i > h + r; i--) {
@@ -122,9 +122,9 @@ public:
 
 	int removeElemAt(int r) {
 		checkIndexOutOfBounds(r, n, "remove", "CircularDeque");
-		//if (topLevel && n < l / 4) {
-		//	halveSize();
-		//}
+		if (topLevel && n < l / 4) {
+			halveSize();
+		}
 
 		int e = a[(h + r) % l];
 
@@ -155,6 +155,8 @@ public:
 		n--;
 		if (n < 0) {
 			cout << "n is below 0 in CircularDeque!" << endl;
+			cout << toStringPretty() << endl;
+			cout << toString() << endl;
 			string s;
 			cin >> s;
 		}

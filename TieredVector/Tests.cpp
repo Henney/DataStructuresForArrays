@@ -15,7 +15,9 @@
 #define DELETIONS 1000
 #define ACCESSES 100000
 #define INTERVAL 1000
-#define AMOUNT 5
+#define AMOUNT 6
+
+#define HEADERS "size;array;vector;bst;tiered vector;bittrick tiered vector;general tiered vector (k = 2)\n"
 
 #define ARRAY_AMOUNT 200000
 
@@ -138,8 +140,8 @@ double* benchmarkInsertionBitTrickK2TieredVector() {
 	return result;
 }
 
-double* benchmarkInsertion3TieredVector() {
-	KTieredVector tv(3);
+double* benchmarkInsertion2TieredVector() {
+	KTieredVector tv(2);
 	double* result = new double[TESTS];
 
 	for (int i = 0; i < TESTS; i++) {
@@ -172,8 +174,8 @@ void benchmarkInsertion()
 		&benchmarkInsertionK2TieredVector
 		,
 		&benchmarkInsertionBitTrickK2TieredVector
-		//,
-		//&benchmarkInsertion3TieredVector
+		,
+		&benchmarkInsertion2TieredVector
 	};
 	
 	double results[AMOUNT][TESTS];
@@ -188,7 +190,7 @@ void benchmarkInsertion()
 
 	ofstream outfile;
 	outfile.open("insertion.txt");
-	outfile << "size;array;vector;bst;tiered vector;bittrick tiered vector\n";
+	outfile << HEADERS;
 	for (int i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * i;
 		for (int j = 0; j < AMOUNT; j++) {
@@ -343,6 +345,31 @@ double* benchmarkRemovalBitTrickK2TieredVector() {
 	return result;
 }
 
+double* benchmarkRemoval2TieredVector() {
+	double* result = new double[TESTS];
+	KTieredVector tv(2);
+
+	for (int i = 0; i < TESTS * INTERVAL; i++) {
+		tv.insertLast(i);
+	}
+
+	for (int i = 0; i < TESTS; i++) {
+		double start = TIMER_FUNC();
+		for (int j = 0; j < DELETIONS; j++) {
+			int no = rand() % tv.n;
+			tv.removeElemAt(no);
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
+
+		for (int j = 0; j < INTERVAL - DELETIONS; j++) {
+			tv.removeLast();
+		}
+	}
+
+	return result;
+}
+
 void benchmarkRemoval()
 {
 	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
@@ -356,6 +383,8 @@ void benchmarkRemoval()
 		&benchmarkRemovalK2TieredVector
 		,
 		&benchmarkRemovalBitTrickK2TieredVector
+		,
+		&benchmarkRemoval2TieredVector
 	};
 
 	double results[AMOUNT][TESTS];
@@ -370,7 +399,7 @@ void benchmarkRemoval()
 
 	ofstream outfile;
 	outfile.open("removal.txt");
-	outfile << "size;array;vector;bst;tiered vector;bittrick tiered vector\n";
+	outfile << HEADERS;
 	for (int i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * (TESTS - i);
 		for (int j = 0; j < AMOUNT; j++) {
@@ -488,6 +517,27 @@ double* benchmarkAccessBitTrickK2TieredVector() {
 	return result;
 }
 
+double* benchmarkAccess2TieredVector() {
+	double* result = (double*)calloc(TESTS, sizeof 0.0);
+
+	KTieredVector tv(2);
+
+	for (int i = 0; i < TESTS; i++) {
+		for (int j = 0; j < INTERVAL; j++) {
+			tv.insertLast(j);
+		}
+
+		double start = TIMER_FUNC();
+		for (int j = 0; j < ACCESSES; j++) {
+			int no = rand() % tv.n;
+			tv.getElemAt(no);
+		}
+		double end = TIMER_FUNC();
+		result[i] = end - start;
+	}
+	return result;
+}
+
 void benchmarkAccess()
 {
 	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
@@ -501,6 +551,8 @@ void benchmarkAccess()
 		&benchmarkAccessK2TieredVector
 		, 
 		&benchmarkAccessBitTrickK2TieredVector
+		,
+		&benchmarkAccess2TieredVector
 	};
 	
 	double results[AMOUNT][TESTS];
@@ -515,7 +567,7 @@ void benchmarkAccess()
 
 	ofstream outfile;
 	outfile.open("access.txt");
-	outfile << "size;array;vector;bst;tiered vector;bittrick tiered vector\n";
+	outfile << HEADERS;
 	for (int i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * i;
 		for (int j = 0; j < AMOUNT; j++) {
@@ -526,13 +578,13 @@ void benchmarkAccess()
 	outfile.close();
 }
 
-int main()
-{
-	//benchmarkInsertion();
-	//benchmarkRemoval();
-	benchmarkAccess();
-	
-	string s;
-	cin >> s;
-	return 0;
-}
+//int main()
+//{
+//	//benchmarkInsertion();
+//	//benchmarkRemoval();
+//	//benchmarkAccess();
+//	
+//	string s;
+//	cin >> s;
+//	return 0;
+//}
