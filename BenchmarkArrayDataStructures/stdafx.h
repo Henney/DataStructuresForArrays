@@ -3,10 +3,13 @@
 // are changed infrequently
 //
 
-//#pragma once
+#pragma once
 
 #include "targetver.h"
 
-#define DEBUG false
+#include <stdio.h>
+#include <tchar.h>
+
+
 
 // TODO: reference additional headers your program requires here

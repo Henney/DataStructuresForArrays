@@ -1,10 +1,22 @@
+// BenchmarkArrayDataStructures.cpp : Defines the entry point for the console application.
+//
+
 #include "stdafx.h"
-#include "K2TieredVector.cpp"
-#include "TieredVector.cpp"
+#include <string>
+#include <iostream>
+
+#include "..\TieredVector\K2TieredVector.cpp"
+#include "..\TieredVector\TieredVector.cpp"
 #include <set>
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include "util.h"
+
+linear_congruential_engine<uint32_t, 48271, 0, 2147483647> rand_engine(1);
+#define RAND_FUNC rand_engine
+#define RESEED(x) rand_engine.seed(x)
+
 
 #define MIN(a, b) (a < b ? a : b)
 #define SEED 3938
@@ -22,7 +34,7 @@
 #define ARRAY_AMOUNT 200000
 
 /*
-	Insertion
+Insertion
 */
 
 double* benchmarkInsertionArray() {
@@ -164,7 +176,7 @@ void benchmarkInsertion()
 		,
 		&benchmarkInsertionDequeK2TieredVector
 	};
-	
+
 	double results[AMOUNT][TESTS];
 	for (int32_t i = 0; i < AMOUNT; i++) {
 		RESEED(SEED);
@@ -189,7 +201,7 @@ void benchmarkInsertion()
 }
 
 /*
-	Removal
+Removal
 */
 
 double* benchmarkRemovalArray() {
@@ -244,7 +256,6 @@ double* benchmarkRemovalVector() {
 			v.pop_back();
 		}
 	}
-	assert(v.size() == 0);
 	return result;
 }
 
@@ -334,7 +345,7 @@ void benchmarkRemoval()
 {
 	double* (*functions[AMOUNT])() = {
 		&benchmarkRemovalArray
-		, 
+		,
 		&benchmarkRemovalVector
 		,
 		&benchmarkRemovalBST
@@ -374,7 +385,7 @@ void benchmarkRemoval()
 }
 
 /*
-	Access
+Access
 */
 
 double* benchmarkAccessArray() {
@@ -496,12 +507,12 @@ void benchmarkAccess()
 		&benchmarkAccessBitTrickDeque
 		,
 		&benchmarkAccessK2TieredVector
-		, 
+		,
 		&benchmarkAccessBitTrickK2TieredVector
 		,
 		&benchmarkAccessDequeK2TieredVector
 	};
-	
+
 	double results[AMOUNT][TESTS];
 	for (int32_t i = 0; i < AMOUNT; i++) {
 		RESEED(SEED);
@@ -527,10 +538,10 @@ void benchmarkAccess()
 
 int main()
 {
-	//benchmarkInsertion();
-	//benchmarkRemoval();
+	benchmarkInsertion();
+	benchmarkRemoval();
 	benchmarkAccess();
-	
+
 	string s;
 	cin >> s;
 	return 0;

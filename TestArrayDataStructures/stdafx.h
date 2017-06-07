@@ -3,10 +3,11 @@
 // are changed infrequently
 //
 
-//#pragma once
+#pragma once
 
 #include "targetver.h"
 
-#define DEBUG false
+// Headers for CppUnitTest
+#include "CppUnitTest.h"
 
 // TODO: reference additional headers your program requires here
