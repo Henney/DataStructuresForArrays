@@ -27,7 +27,7 @@ linear_congruential_engine<uint32_t, 48271, 0, 2147483647> rand_engine(1);
 #define DELETIONS 500
 #define ACCESSES 100000
 #define INTERVAL 500
-#define AMOUNT 8
+#define AMOUNT 9
 
 #define HEADERS "size;array;vector;bst;deque;bittrick deque;tiered vector (k=2);bittrick tiered vector (k=2);deque tiered vector (k=2)\n"
 
@@ -117,8 +117,7 @@ double* benchmarkInsertion(RankSequence &ds) {
 	for (int32_t i = 0; i < TESTS; i++) {
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < INSERTIONS; j++) {
-			int32_t no = RAND_FUNC() % (ds.n + 1);
-			//cout << "n: " << ds.n << " no: " << no << endl;
+			int32_t no = RAND_FUNC() % (ds.size() + 1);
 			ds.insertElemAt(no, j);
 		}
 		double end = TIMER_FUNC();
@@ -156,10 +155,17 @@ double* benchmarkInsertionDequeK2TieredVector() {
 	return benchmarkInsertion(tv);
 }
 
+double* benchmarkInsertion2TieredVector() {
+	TieredVector tv(2);
+	return benchmarkInsertion(tv);
+}
+
 void benchmarkInsertion()
 {
 	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
 	double* (*functions[AMOUNT])() = {
+		&benchmarkInsertion2TieredVector
+		,
 		&benchmarkInsertionArray
 		,
 		&benchmarkInsertionVector
@@ -302,7 +308,7 @@ double* benchmarkRemoval(RankSequence &ds) {
 	for (int32_t i = 0; i < TESTS; i++) {
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < DELETIONS; j++) {
-			int32_t no = RAND_FUNC() % ds.n;
+			int32_t no = RAND_FUNC() % ds.size();
 			ds.removeElemAt(no);
 		}
 		double end = TIMER_FUNC();
@@ -395,14 +401,19 @@ double* benchmarkAccessArray() {
 		const int32_t size = (i + 1) * INTERVAL;
 		int32_t *a = new int32_t[size];
 
+		int* order = (int*)calloc(ACCESSES, sizeof 0);
+		for (int32_t j = 0; j < ACCESSES; j++) {
+			order[j] = RAND_FUNC() % size;
+		}
+
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < ACCESSES; j++) {
-			int32_t no = RAND_FUNC() % size;
-			a[no];
+			noop(a[order[j]]);
 		}
 		double end = TIMER_FUNC();
 		result[i] = end - start;
 		delete[] a;
+		delete[] order;
 	}
 	return result;
 }
@@ -417,13 +428,18 @@ double* benchmarkAccessVector() {
 			v.push_back(j);
 		}
 
+		int* order = (int*)calloc(ACCESSES, sizeof 0);
+		for (int32_t j = 0; j < ACCESSES; j++) {
+			order[j] = RAND_FUNC() % v.size();
+		}
+
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < ACCESSES; j++) {
-			int32_t no = RAND_FUNC() % v.size();
-			v.at(no);
+			v.at(order[j]);
 		}
 		double end = TIMER_FUNC();
 		result[i] = end - start;
+		delete[] order;
 	}
 	return result;
 }
@@ -438,13 +454,18 @@ double* benchmarkAccessBST() {
 			s.insert(i*INTERVAL + j);
 		}
 
+		int* order = (int*)calloc(ACCESSES, sizeof 0);
+		for (int32_t j = 0; j < ACCESSES; j++) {
+			order[j] = RAND_FUNC() % s.size();
+		}
+
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < ACCESSES; j++) {
-			int32_t no = RAND_FUNC() % s.size();
-			s.find(no);
+			s.find(order[j]);
 		}
 		double end = TIMER_FUNC();
 		result[i] = end - start;
+		delete[] order;
 	}
 	return result;
 }
@@ -457,13 +478,18 @@ double* benchmarkAccess(RankSequence &ds) {
 			ds.insertLast(j);
 		}
 
+		int* order = (int*)calloc(ACCESSES, sizeof 0);
+		for (int32_t j = 0; j < ACCESSES; j++) {
+			order[j] = RAND_FUNC() % ds.size();
+		}
+
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < ACCESSES; j++) {
-			int32_t no = RAND_FUNC() % ds.n;
-			ds.getElemAt(no);
+			ds.getElemAt(order[j]);
 		}
 		double end = TIMER_FUNC();
 		result[i] = end - start;
+		delete[] order;
 	}
 	return result;
 }
@@ -493,9 +519,17 @@ double* benchmarkAccessDequeK2TieredVector() {
 	return benchmarkAccess(tv);
 }
 
+double* benchmarkAccess2TieredVector() {
+	TieredVector tv(2, 32);
+	return benchmarkAccess(tv);
+}
+
 void benchmarkAccess()
 {
-	double* (*functions[AMOUNT])() = {
+	const int tempAmount = 9;
+	double* (*functions[tempAmount])() = {
+		&benchmarkAccess2TieredVector
+		,
 		&benchmarkAccessArray
 		,
 		&benchmarkAccessVector
@@ -510,11 +544,11 @@ void benchmarkAccess()
 		,
 		&benchmarkAccessBitTrickK2TieredVector
 		,
-		&benchmarkAccessDequeK2TieredVector
+		&benchmarkAccessDequeK2TieredVector		,
 	};
 
-	double results[AMOUNT][TESTS];
-	for (int32_t i = 0; i < AMOUNT; i++) {
+	double results[tempAmount][TESTS];
+	for (int32_t i = 0; i < tempAmount; i++) {
 		RESEED(SEED);
 		double* result = functions[i]();
 		cout << i << " done" << endl;
@@ -528,7 +562,7 @@ void benchmarkAccess()
 	outfile << HEADERS;
 	for (int32_t i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * i;
-		for (int32_t j = 0; j < AMOUNT; j++) {
+		for (int32_t j = 0; j < tempAmount; j++) {
 			outfile << ";" << results[j][i];
 		}
 		outfile << "\n";
@@ -539,8 +573,8 @@ void benchmarkAccess()
 int main()
 {
 	benchmarkInsertion();
-	benchmarkRemoval();
-	benchmarkAccess();
+	//benchmarkRemoval();
+	//benchmarkAccess();
 
 	string s;
 	cin >> s;

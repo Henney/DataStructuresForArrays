@@ -7,6 +7,4 @@
 
 #include "targetver.h"
 
-#define DEBUG false
-
 // TODO: reference additional headers your program requires here

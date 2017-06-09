@@ -2,12 +2,15 @@
 #include "Deque.cpp"
 
 class K2TieredVector : public RankSequence {
+private:
+	int32_t n = 0;
+	int32_t m = 0;	// Number of children
 protected:
-	Deque *subvectors;
+	Deque *children;
 
 	void init(int32_t size) {
 		this->m = size;
-		subvectors = new Deque[size];
+		children = new Deque[size];
 	}
 
 	void doubleSize() {
@@ -16,29 +19,29 @@ protected:
 
 		Deque *newSubvectors = new Deque[m];
 		for (int32_t i = 0; i < oldM; i++) {
-			newSubvectors[i] = subvectors[i];
+			newSubvectors[i] = children[i];
 			newSubvectors[i].doubleSize();
 		}
 		for (int32_t i = oldM; i < m; i++) {
 			delete[](newSubvectors[i].a);
 			newSubvectors[i] = Deque(m);
 		}
-		delete[] subvectors;
-		subvectors = newSubvectors;
+		delete[] children;
+		children = newSubvectors;
 
 		// Move everything to the lower 1/4 of the current TV
 		int32_t nextDequeWithElems = 1;
 		int32_t moved = 0;
-		int32_t limit = n - subvectors[0].n;
+		int32_t limit = n - children[0].size();
 		for (int32_t i = 0; moved < limit; i++) {
-			while (!subvectors[i].isFull()) {
-				subvectors[i].insertLast(subvectors[nextDequeWithElems].removeFirst());
+			while (!children[i].isFull()) {
+				children[i].insertLast(children[nextDequeWithElems].removeFirst());
 				moved++;
 				if (moved >= limit) {
 					break;
 				}
 
-				while (subvectors[nextDequeWithElems].isEmpty()) {
+				while (children[nextDequeWithElems].isEmpty()) {
 					nextDequeWithElems = (nextDequeWithElems + 1);
 				}
 			}
@@ -54,24 +57,22 @@ protected:
 		}
 
 		for (int32_t i = 0; i < m / 4; i++) {
-			newA[i] = subvectors[i / 2].lowerHalf();
+			newA[i] = children[i / 2].lowerHalf();
 			i++;
-			newA[i] = subvectors[i / 2].upperHalf();
+			newA[i] = children[i / 2].upperHalf();
 		}
-		delete[] subvectors;
-		subvectors = newA;
+		delete[] children;
+		children = newA;
 
 		m /= 2;
 	}
 
 public:
-	int32_t m = 0;	// Number of subvectors. This is the same as the capacity of each subvector since we only have k = 2
-
 	K2TieredVector(int32_t size) {
 		init(size);
 		for (int32_t i = 0; i < size; i++) {
-			delete[] (subvectors[i].a);
-			subvectors[i] = Deque(size);
+			delete[] (children[i].a);
+			children[i] = Deque(size);
 		}
 	}
 
@@ -81,14 +82,23 @@ public:
 
 	~K2TieredVector(void) {
 		for (int32_t i = 0; i < m; i++) {
-			delete[] (subvectors[i].a);
+			delete[] (children[i].a);
 		}
-		delete[] subvectors;
+		delete[] children;
+	}
+
+	int32_t size() {
+		return n;
 	}
 
 	int32_t getElemAt(int32_t r) {
 		int32_t i = r / m;
-		return subvectors[i].getElemAt(r - i*m);
+		return children[i].getElemAt(r - i*m);
+	}
+
+	void setElemAt(int32_t r, int32_t e) {
+		int32_t i = r / m;
+		return children[i].setElemAt(r - i*m, e);
 	}
 
 	void insertElemAt(int32_t r, int32_t e) {
@@ -98,16 +108,16 @@ public:
 
 		int32_t i = r / m;
 
-		if (subvectors[i].isFull()) {
+		if (children[i].isFull()) {
 			int32_t back = n / m;
-			if (subvectors[back].isFull()) {
+			if (children[back].isFull()) {
 				back++;
 			}
 			for (int32_t j = back; j > i; j--) {
-				subvectors[j].insertFirst(subvectors[j - 1].removeLast());
+				children[j].insertFirst(children[j - 1].removeLast());
 			}
 		}
-		subvectors[i].insertElemAt(r - i*m, e);
+		children[i].insertElemAt(r - i*m, e);
 		n++;
 	}
 
@@ -117,9 +127,9 @@ public:
 		}
 
 		int32_t i = n / m;
-		if (subvectors[i].isFull())
+		if (children[i].isFull())
 			i++;
-		subvectors[i].insertLast(e);
+		children[i].insertLast(e);
 		n++;
 	}
 
@@ -132,9 +142,9 @@ public:
 		}
 
 		int32_t i = r / m;
-		int32_t e = subvectors[i].removeElemAt(r - i*m);
+		int32_t e = children[i].removeElemAt(r - i*m);
 		for (int32_t j = i; j < (n-1) / m; j++) {
-			subvectors[j].insertLast(subvectors[j + 1].removeFirst());
+			children[j].insertLast(children[j + 1].removeFirst());
 		}
 		n--;
 		return e;
@@ -146,22 +156,22 @@ public:
 		}
 
 		int32_t i = (n - 1) / m;
-		int32_t e = subvectors[i].removeElemAt(n - 1 - i*m);
+		int32_t e = children[i].removeElemAt(n - 1 - i*m);
 		n--;
 		return e;
 	}
 
 	bool isFull() {
-		return subvectors[m - 1].isFull();
+		return children[m - 1].isFull();
 	}
 
 	string toStringSimple() {
 		string s = "";
 		if (m > 0) {
-			s += subvectors[0].toStringSimple();
+			s += children[0].toStringSimple();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + subvectors[i].toStringSimple();
+			s += ", " + children[i].toStringSimple();
 		}
 		return s;
 	}
@@ -169,10 +179,10 @@ public:
 	string toStringPretty() {
 		string s = "{ ";
 		if (m > 0) {
-			s += subvectors[0].toStringPretty();
+			s += children[0].toStringPretty();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + subvectors[i].toStringPretty();
+			s += ", " + children[i].toStringPretty();
 		}
 		return s += " }";
 	}
@@ -180,10 +190,10 @@ public:
 	string toString() {
 		string s = "{ ";
 		if (m > 0) {
-			s += subvectors[0].toString();
+			s += children[0].toString();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + subvectors[i].toString();
+			s += ", " + children[i].toString();
 		}
 		return s += " }";
 	}
@@ -191,8 +201,11 @@ public:
 
 
 class BitTrickK2TieredVector : public RankSequence {
+private:
+	int32_t n = 0;
+	int32_t m = 0;
 protected:
-	BitTrickDeque *subvectors;
+	BitTrickDeque *children;
 
 	int8_t shift;
 
@@ -202,29 +215,29 @@ protected:
 
 		BitTrickDeque *newSubvectors = new BitTrickDeque[m];
 		for (int32_t i = 0; i < oldM; i++) {
-			newSubvectors[i] = subvectors[i];
+			newSubvectors[i] = children[i];
 			newSubvectors[i].doubleSize();
 		}
 		for (int32_t i = oldM; i < m; i++) {
 			delete[](newSubvectors[i].a);
 			newSubvectors[i] = BitTrickDeque(m);
 		}
-		delete[] subvectors;
-		subvectors = newSubvectors;
+		delete[] children;
+		children = newSubvectors;
 		
 		// Move everything to the lower 1/4 of the current TV
 		int32_t nextDequeWithElems = 1;
 		int32_t moved = 0;
-		int32_t limit = n - subvectors[0].n;
+		int32_t limit = n - children[0].size();
 		for (int32_t i = 0; moved < limit; i++) {
-			while (!subvectors[i].isFull()) {
-				subvectors[i].insertLast(subvectors[nextDequeWithElems].removeFirst());
+			while (!children[i].isFull()) {
+				children[i].insertLast(children[nextDequeWithElems].removeFirst());
 				moved++;
 				if (moved >= limit) {
 					break;
 				}
 
-				while (subvectors[nextDequeWithElems].isEmpty()) {
+				while (children[nextDequeWithElems].isEmpty()) {
 					nextDequeWithElems = (nextDequeWithElems + 1);
 				}
 			}
@@ -243,35 +256,42 @@ protected:
 		}
 
 		for (int32_t i = 0; i < m >> 1; i++) {
-			newSubvectors[i] = subvectors[i >> 1].lowerHalf();
+			newSubvectors[i] = children[i >> 1].lowerHalf();
 			i++;
-			newSubvectors[i] = subvectors[i >> 1].upperHalf();
+			newSubvectors[i] = children[i >> 1].upperHalf();
 		}
-		delete[] subvectors;
-		subvectors = newSubvectors;
+		delete[] children;
+		children = newSubvectors;
 
 		shift--;
 	}
 
 public:
-	int32_t m = 0;
-
 	BitTrickK2TieredVector() {
 		this->m = DEFAULT_SIZE;
 		this->shift = (int32_t)log2(DEFAULT_SIZE);
-		this->subvectors = new BitTrickDeque[DEFAULT_SIZE];
+		this->children = new BitTrickDeque[DEFAULT_SIZE];
 	}
 
 	~BitTrickK2TieredVector(void) {
 		for (int32_t i = 0; i < m; i++) {
-			delete[](subvectors[i].a);
+			delete[](children[i].a);
 		}
-		delete[] subvectors;
+		delete[] children;
+	}
+
+	int32_t size() {
+		return n;
 	}
 
 	int32_t getElemAt(int32_t r) {
 		int32_t i = r >> shift;
-		return subvectors[i].getElemAt(r - (i << shift));
+		return children[i].getElemAt(r - (i << shift));
+	}
+
+	void setElemAt(int32_t r, int32_t e) {
+		int32_t i = r >> shift;
+		return children[i].setElemAt(r - (i << shift), e);
 	}
 
 	void insertElemAt(int32_t r, int32_t e) {
@@ -281,16 +301,16 @@ public:
 
 		int32_t i = r >> shift;
 
-		if (subvectors[i].isFull()) {
+		if (children[i].isFull()) {
 			int32_t back = n >> shift;
-			if (subvectors[back].isFull()) {
+			if (children[back].isFull()) {
 				back++;
 			}
 			for (int32_t j = back; j > i; j--) {
-				subvectors[j].insertFirst(subvectors[j - 1].removeLast());
+				children[j].insertFirst(children[j - 1].removeLast());
 			}
 		}
-		subvectors[i].insertElemAt(r - (i << shift), e);
+		children[i].insertElemAt(r - (i << shift), e);
 		n++;
 	}
 
@@ -300,9 +320,9 @@ public:
 		}
 
 		int32_t i = n >> shift;
-		if (subvectors[i].isFull())
+		if (children[i].isFull())
 			i++;
-		subvectors[i].insertLast(e);
+		children[i].insertLast(e);
 		n++;
 	}
 
@@ -315,9 +335,9 @@ public:
 		}
 
 		int32_t i = r >> shift;
-		int32_t e = subvectors[i].removeElemAt(r - (i << shift));
+		int32_t e = children[i].removeElemAt(r - (i << shift));
 		for (int32_t j = i; j < (n - 1) >> shift; j++) {
-			subvectors[j].insertLast(subvectors[j + 1].removeFirst());
+			children[j].insertLast(children[j + 1].removeFirst());
 		}
 		n--;
 		return e;
@@ -329,22 +349,22 @@ public:
 		}
 
 		int32_t i = (n - 1) >> shift;
-		int32_t e = subvectors[i].removeElemAt(n - 1 - (i << shift));
+		int32_t e = children[i].removeElemAt(n - 1 - (i << shift));
 		n--;
 		return e;
 	}
 
 	bool isFull() {
-		return subvectors[m - 1].isFull();
+		return children[m - 1].isFull();
 	}
 
 	string toStringSimple() {
 		string s = "";
 		if (m > 0) {
-			s += subvectors[0].toStringSimple();
+			s += children[0].toStringSimple();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + subvectors[i].toStringSimple();
+			s += ", " + children[i].toStringSimple();
 		}
 		return s;
 	}
@@ -352,10 +372,10 @@ public:
 	string toStringPretty() {
 		string s = "{ ";
 		if (m > 0) {
-			s += subvectors[0].toStringPretty();
+			s += children[0].toStringPretty();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + subvectors[i].toStringPretty();
+			s += ", " + children[i].toStringPretty();
 		}
 		return s += " }";
 	}
@@ -363,10 +383,10 @@ public:
 	string toString() {
 		string s = "{ ";
 		if (m > 0) {
-			s += subvectors[0].toString();
+			s += children[0].toString();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + subvectors[i].toString();
+			s += ", " + children[i].toString();
 		}
 		return s += " }";
 	}
@@ -375,10 +395,11 @@ public:
 // TODO: Make a version that utilises bitshifts
 class DequeK2TieredVector : public RankSequence {
 private:
-	int32_t h;
-	int32_t size;		// Amount of subvectors with elements. Maximum m
+	int32_t n = 0;
+	int32_t h = 0;
+	int32_t m = 0;		// Number of children
 
-	Deque *cd;
+	Deque *children;
 
 	int32_t elem(int32_t r) {
 		return (h + r) % m;
@@ -389,9 +410,8 @@ private:
 	}
 
 	void init(int32_t size) {
-		this->h = 0;
 		this->m = size;
-		cd = new Deque[size];
+		children = new Deque[size];
 	}
 
 	void doubleSize() {
@@ -401,23 +421,16 @@ private:
 			newA[i] = Deque(m * 2);
 		}
 
-		// Move everything to the lower 1/4 of the current TV
-		int32_t limit = n;
-		int32_t moved = 0;
-		int32_t cdToRemoveFrom = 0;
-		Deque oldCd = cd[elem(cdToRemoveFrom)];
-		for (int32_t i = 0; moved < limit; i++) {
-			while (!newA[i].isFull() && moved < limit) {
-				newA[i].insertLast(oldCd.removeFirst());
-				moved++;
-				if (oldCd.isEmpty()) {
-					cdToRemoveFrom++;
-					oldCd = cd[elem(cdToRemoveFrom)];
-				}
+		// Move everything to the lower 1/4 of this tiered vector
+		int32_t idx = 0;
+		for (int32_t i = 0; i < m; i++) {
+			while (!newA[i].isFull() && idx < n) {
+				newA[i].insertLast(getElemAt(idx));
+				idx++;
 			}
 		}
-		delete[] cd;
-		cd = newA;
+		delete[] children;
+		children = newA;
 
 		m *= 2;
 		h = 0;
@@ -438,16 +451,31 @@ private:
 				to++;
 		}
 
-		delete[] cd;
-		cd = newA;
+		delete[] children;
+		children = newA;
 
 		m /= 2;
 		h = 0;
 	}
 
-public:
-	int32_t m = 0;		// Number of subvectors
+	bool lastFull() {
+		int32_t i = (h - 1 + m) % m;
+		return children[i].size() == m;
+	}
 
+	bool firstFull() {
+		return children[h].size() == m;
+	}
+
+	bool tooFull() {
+		return children[h].size() > 0 && children[(h - 1 + m) % m].size() > 0;
+	}
+
+	bool tooEmpty() {
+		return n < m * m / 8;
+	}
+
+public:
 	DequeK2TieredVector() {
 		init(DEFAULT_SIZE);
 	}
@@ -457,42 +485,52 @@ public:
 	}
 
 	~DequeK2TieredVector(void) {
-		delete[] cd;
+		delete[] children;
+	}
+
+	int32_t size() {
+		return n;
 	}
 
 	int32_t getElemAt(int32_t r) {
-		int32_t l0 = cd[h].n;
+		int32_t l0 = children[h].size();
 		int32_t i = (int32_t)ceil((double)(r + 1 - l0) / m);
 		int32_t newR = i == 0 ? r : (r - l0) % m;
 
-		return cd[elem(i)].getElemAt(newR);
+		return children[elem(i)].getElemAt(newR);
+	}
+
+	void setElemAt(int32_t r, int32_t e) {
+		int32_t l0 = children[h].size();
+		int32_t i = (int32_t)ceil((double)(r + 1 - l0) / m);
+		int32_t newR = i == 0 ? r : (r - l0) % m;
+
+		return children[elem(i)].setElemAt(newR, e);
 	}
 
 	void insertElemAt(int32_t r, int32_t e) {
 #if DEBUG
-		cout << "Inserting " << e << " at " << r << endl;
-		//cout << toStringPretty() << endl;
 		checkIndexOutOfBounds(r, n + 1, "insert", "TieredVector");
 #endif
 		if (r == n) {
 			return insertLast(e);
 		}
-
-		int32_t l0 = cd[h].n;
-		int32_t i = (int32_t)ceil((double)(r + 1 - l0) / m);
-		int32_t newR = i == 0 ? r : (r - l0) % m;
+		else if (r == 0) {
+			return insertFirst(e);
+		}
 
 		bool insertFront = r < n - r;
 
-		if (isFull() && ((insertFront && firstFull()) || (!insertFront && lastFull()))) {
+		if (tooFull() && ((insertFront && firstFull()) || (!insertFront && lastFull()))) {
 			doubleSize();
-			int32_t l0 = cd[h].n;
-			i = (int32_t)ceil((double)(r + 1 - l0) / m);
-			newR = i == 0 ? r : (r - l0) % m;
 		}
 
+		int32_t n0 = children[h].size();
+		int32_t i = (int32_t)ceil((double)(r + 1 - n0) / m);
+		int32_t newR = i == 0 ? r : (r - n0) % m;
+
 		if (insertFront) {
-			if (cd[h].isFull()) {
+			if (children[h].isFull()) {
 				incH(-1);
 				i++;
 			}
@@ -500,50 +538,54 @@ public:
 				newR--;
 				if (newR < 0) {
 					i--;
-					newR = i == 0 ? cd[h].n : m - 1;
+					newR = i == 0 ? children[h].size() : m - 1;
 				}
 			}
 			for (int32_t j = 0; j < i; j++) {
-				cd[elem(j)].insertLast(cd[elem(j + 1)].removeFirst());
+				children[elem(j)].insertLast(children[elem(j + 1)].removeFirst());
 			}
 		}
 		else {
-			int32_t back = (int32_t)ceil((double)(n - l0) / m);
+			int32_t back = (int32_t)ceil((double)(n - n0) / m);
 
-
-			if (cd[elem(back)].isFull()) {
+			if (children[elem(back)].isFull()) {
 				back++;
 			}
+
 			for (int32_t j = back; j > i; j--) {
-				cd[elem(j)].insertFirst(cd[elem(j - 1)].removeLast());
+				children[elem(j)].insertFirst(children[elem(j - 1)].removeLast());
 			}
 		}
 
-		cd[elem(i)].insertElemAt(newR, e);
+		children[elem(i)].insertElemAt(newR, e);
 
 		n++;
 	}
 
 	void insertFirst(int32_t e) {
-		insertElemAt(0, e);
+		if (tooFull() && firstFull()) {
+			doubleSize();
+		}
+
+		if (children[h].isFull())
+			incH(-1);
+		children[h].insertFirst(e);
+		n++;
 	}
 
 	void insertLast(int32_t e) {
-		if (isFull() && lastFull()) {
+		if (tooFull() && lastFull()) {
 			doubleSize();
 		}
 
 		int32_t i = n / m;
-		if (cd[elem(i)].isFull())
+		if (children[elem(i)].isFull())
 			i++;
-		cd[elem(i)].insertLast(e);
+		children[elem(i)].insertLast(e);
 		n++;
 	}
 
 	int32_t removeElemAt(int32_t r) {
-#if DEBUG
-		cout << "Removing at " << r << " in DequeK2TieredVector. n: " << n << endl;
-#endif
 		if (tooEmpty()) {
 			halveSize();
 		}
@@ -551,33 +593,33 @@ public:
 		int32_t e;
 		bool removeFront = r < n - r;
 
-		int32_t l0 = cd[h].n;
+		int32_t l0 = children[h].size();
 		int32_t i = (int32_t)ceil((double)(r + 1 - l0) / m);
 		int32_t newR = i == 0 ? r : (r - l0) % m;
 
 		if (removeFront) {
-			e = cd[elem(i)].removeElemAt(newR);
+			e = children[elem(i)].removeElemAt(newR);
 
 			for (int32_t j = i; j > 0; j--) {
-				cd[elem(j)].insertFirst(cd[elem(j - 1)].removeLast());
+				children[elem(j)].insertFirst(children[elem(j - 1)].removeLast());
 			}
 
-			if (cd[h].isEmpty()) {
+			if (children[h].isEmpty()) {
 				incH(1);
 			}
 
 		}
 		else {
-			e = cd[elem(i)].removeElemAt(newR);
+			e = children[elem(i)].removeElemAt(newR);
 
 			int32_t back = (int32_t)ceil((double)(n - l0) / m);
 
-			if (cd[elem(back)].isEmpty()) {
+			if (children[elem(back)].isEmpty()) {
 				back--;
 			}
 
 			for (int32_t j = i; j < back; j++) {
-				cd[elem(j)].insertLast(cd[elem(j + 1)].removeFirst());
+				children[elem(j)].insertLast(children[elem(j + 1)].removeFirst());
 			}
 		}
 
@@ -594,33 +636,20 @@ public:
 	}
 
 	bool isFull() {
-		return cd[h].n > 0 && cd[(h - 1 + m) % m].n > 0;
+		return n == m * m;
 	}
 
 	bool isEmpty() {
 		return n == 0;
 	}
 
-	bool lastFull() {
-		int32_t i = (h - 1 + m) % m;
-		return cd[i].n == m;
-	}
-
-	bool firstFull() {
-		return cd[h].n == m;
-	}
-
-	bool tooEmpty() {
-		return n < m * m / 8;
-	}
-
 	string toStringPretty() {
 		string s = "{ ";
 		if (m > 0) {
-			s += cd[h].toStringPretty();
+			s += children[h].toStringPretty();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + cd[elem(i)].toStringPretty();
+			s += ", " + children[elem(i)].toStringPretty();
 		}
 		return s += " }";
 	}
@@ -628,10 +657,10 @@ public:
 	string toString() {
 		string s = "{ ";
 		if (m > 0) {
-			s += cd[0].toString();
+			s += children[0].toString();
 		}
 		for (int32_t i = 1; i < m; i++) {
-			s += ", " + cd[i].toString();
+			s += ", " + children[i].toString();
 		}
 		return s += " }";
 	}

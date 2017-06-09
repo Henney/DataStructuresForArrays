@@ -4,11 +4,7 @@
 #include <new>
 #include <array>
 #include <string>
-#include <assert.h>
+#include <cassert>
 #include <random>
 
 using namespace std;
-
-class Deque;
-class K2TieredVector;
-class BitTrickK2TieredVector;

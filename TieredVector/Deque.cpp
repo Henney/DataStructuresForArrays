@@ -6,10 +6,15 @@
 #endif // ! _UTIL_INCLUDED
 
 class Deque : public RankSequence {
+	friend class K2TieredVector;
+	friend class DequeK2TieredVector;
 private:
+	int32_t n = 0;
 	int32_t h = 0;
 	int32_t m = 0;	// Capacity/length of the current deque
 	bool topLevel = false;
+
+	int32_t* a;		// The array
 
 	void init(int32_t capacity, bool topLevel) {
 		if ((capacity - 1) & capacity)
@@ -21,9 +26,29 @@ private:
 	void incH(int8_t inc) {
 		h = (h + m + inc) % m;
 	}
-public:
-	int32_t* a;		// The array
 
+	void doubleSize() {
+		int32_t *b = new int32_t[m * 2];
+		for (int32_t i = 0; i < n; i++) {
+			b[i] = getElemAt(i);
+		}
+		delete[] a;
+		this->a = b;
+		m *= 2;
+		h = 0;
+	}
+
+	void halveSize() {
+		int32_t *b = new int32_t[m / 2];
+		for (int32_t i = 0; i < m / 2; i++) {
+			b[i] = getElemAt(i);
+		}
+		delete[] a;
+		this->a = b;
+		m /= 2;
+		h = 0;
+	}
+public:
 	Deque(int32_t capacity, bool topLevel) {
 		init(capacity, topLevel);
 	}
@@ -40,19 +65,16 @@ public:
 		init(DEFAULT_SIZE, false);
 	}
 
+	int32_t size() {
+		return n;
+	}
+
 	int32_t getElemAt(int32_t r) {
 		return a[(h + r) % m];
 	}
 
-	void doubleSize() {
-		int32_t *b = new int32_t[m * 2];
-		for (int32_t i = 0; i < n; i++) {
-			b[i] = getElemAt(i);
-		}
-		delete[] a;
-		this->a = b;
-		m *= 2;
-		h = 0;
+	void setElemAt(int32_t r, int32_t e) {
+		a[(h + r) % m] = e;
 	}
 
 	Deque lowerHalf() {
@@ -73,17 +95,6 @@ public:
 		}
 
 		return b;
-	}
-
-	void halveSize() {
-		int32_t *b = new int32_t[m / 2];
-		for (int32_t i = 0; i < m / 2; i++) {
-			b[i] = getElemAt(i);
-		}
-		delete[] a;
-		this->a = b;
-		m /= 2;
-		h = 0;
 	}
 
 	void insertElemAt(int32_t r, int32_t e) {
@@ -132,9 +143,6 @@ public:
 		cout << "removing at " << r << ". n: " << n << endl;
 #endif
 		if (topLevel && n < m / 4) {
-#if DEBUG
-			cout << "n: " << n << endl;
-#endif
 			halveSize();
 		}
 
@@ -152,9 +160,6 @@ public:
 		}
 		n--;
 		h = isEmpty() ? 0 : h;
-		if (n < 0) {
-			warnNBelow0();
-		}
 		return e;
 	}
 
@@ -163,9 +168,6 @@ public:
 		incH(1);
 		h = isEmpty() ? 0 : h;
 		n--;
-		if (n < 0) {
-			warnNBelow0();
-		}
 		return e;
 	}
 
@@ -173,9 +175,6 @@ public:
 		int32_t e = a[(h + n - 1) % m];
 		h = isEmpty() ? 0 : h;
 		n--;
-		if (n < 0) {
-			warnNBelow0();
-		}
 		return e;
 	}
 
@@ -220,10 +219,15 @@ public:
 };
 
 class BitTrickDeque : public RankSequence {
+	friend class BitTrickK2TieredVector;
 private:
+	int32_t n = 0;
 	int32_t h = 0;
+	int32_t m = 0;	// Capacity/length of the current deque
 	int8_t shift;
 	bool topLevel = false;
+
+	int32_t *a;		// The array
 
 	void init(int32_t capacity, bool topLevel) {
 		if ((capacity - 1) & capacity)
@@ -235,49 +239,6 @@ private:
 	}
 	void incH(int8_t inc) {
 		h = (h + m + inc) & (m - 1);
-	}
-public:
-	int32_t *a;		// The array
-	int32_t m = 0;	// Capacity/length of the current deque
-
-	BitTrickDeque(int32_t capacity, bool topLevel) {
-		init(capacity, topLevel);
-	}
-
-	BitTrickDeque(int32_t capacity) {
-		init(capacity, false);
-	}
-
-	BitTrickDeque(bool topLevel) {
-		init(DEFAULT_SIZE, topLevel);
-	}
-
-	BitTrickDeque() {
-		init(DEFAULT_SIZE, false);
-	}
-
-	int32_t getElemAt(int32_t r) {
-		return a[(h + r) & (m - 1)];
-	}
-
-	BitTrickDeque lowerHalf() {
-		BitTrickDeque b(m >> 1);
-
-		for (int32_t i = 0; i < m >> 1; i++) {
-			b.insertElemAt(i, getElemAt(i));
-		}
-
-		return b;
-	}
-
-	BitTrickDeque upperHalf() {
-		BitTrickDeque b(m >> 1);
-
-		for (int32_t i = m >> 1; i < m; i++) {
-			b.insertElemAt(i - (m >> 1), getElemAt(i));
-		}
-
-		return b;
 	}
 
 	void doubleSize() {
@@ -302,6 +263,54 @@ public:
 		this->a = b;
 		m = m >> 1;
 		h = 0;
+	}
+public:
+	BitTrickDeque(int32_t capacity, bool topLevel) {
+		init(capacity, topLevel);
+	}
+
+	BitTrickDeque(int32_t capacity) {
+		init(capacity, false);
+	}
+
+	BitTrickDeque(bool topLevel) {
+		init(DEFAULT_SIZE, topLevel);
+	}
+
+	BitTrickDeque() {
+		init(DEFAULT_SIZE, false);
+	}
+
+	int32_t size() {
+		return n;
+	}
+
+	int32_t getElemAt(int32_t r) {
+		return a[(h + r) & (m - 1)];
+	}
+
+	void setElemAt(int32_t r, int32_t e) {
+		a[(h + r) & (m - 1)] = e;
+	}
+
+	BitTrickDeque lowerHalf() {
+		BitTrickDeque b(m >> 1);
+
+		for (int32_t i = 0; i < m >> 1; i++) {
+			b.insertElemAt(i, getElemAt(i));
+		}
+
+		return b;
+	}
+
+	BitTrickDeque upperHalf() {
+		BitTrickDeque b(m >> 1);
+
+		for (int32_t i = m >> 1; i < m; i++) {
+			b.insertElemAt(i - (m >> 1), getElemAt(i));
+		}
+
+		return b;
 	}
 
 	void insertElemAt(int32_t r, int32_t e) {
@@ -366,9 +375,6 @@ public:
 		}
 		n--;
 		h = isEmpty() ? 0 : h;
-		if (n < 0) {
-			warnNBelow0();
-		}
 		return e;
 	}
 
@@ -377,9 +383,6 @@ public:
 		incH(1);
 		h = isEmpty() ? 0 : h;
 		n--;
-		if (n < 0) {
-			warnNBelow0();
-		}
 		return e;
 	}
 
@@ -387,9 +390,6 @@ public:
 		int32_t e = a[(h + n - 1) & (m - 1)];
 		h = isEmpty() ? 0 : h;
 		n--;
-		if (n < 0) {
-			warnNBelow0();
-		}
 		return e;
 	}
 
