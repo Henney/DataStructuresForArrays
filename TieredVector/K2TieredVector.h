@@ -6,11 +6,11 @@
 #include "Util.h"
 #endif // ! _UTIL_INCLUDED
 
-class K2TieredVector : public RankSequence {
+class Simple2TieredVector : public ArrayDataStructure {
 public:
-	K2TieredVector(int32_t size);
-	K2TieredVector(void);
-	~K2TieredVector(void);
+	Simple2TieredVector(int32_t size);
+	Simple2TieredVector(void);
+	~Simple2TieredVector(void);
 
 	int32_t getElemAt(int32_t);
 	void insertElemAt(int32_t, int32_t);
@@ -21,10 +21,10 @@ public:
 };
 
 
-class BitTrickK2TieredVector : public RankSequence {
+class BitTrickSimple2TieredVector : public ArrayDataStructure {
 public:
-	BitTrickK2TieredVector(void);
-	~BitTrickK2TieredVector(void);
+	BitTrickSimple2TieredVector(void);
+	~BitTrickSimple2TieredVector(void);
 
 	int32_t getElemAt(int32_t);
 	void insertElemAt(int32_t, int32_t);
@@ -35,11 +35,11 @@ public:
 };
 
 
-class DequeK2TieredVector : public RankSequence {
+class Deque2TieredVector : public ArrayDataStructure {
 public:
-	DequeK2TieredVector(int32_t size);
-	DequeK2TieredVector(void);
-	~DequeK2TieredVector(void);
+	Deque2TieredVector(int32_t size);
+	Deque2TieredVector(void);
+	~Deque2TieredVector(void);
 
 	int32_t getElemAt(int32_t);
 	void insertElemAt(int32_t, int32_t);

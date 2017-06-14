@@ -3,7 +3,7 @@
 #include "Util.h"
 
 // TODO: Make a version that utilises bitshifts
-class TieredVector : public RankSequence {
+class TieredVector : public ArrayDataStructure {
 private:
 	int32_t k;
 	int32_t m = 0;		// Number of children
@@ -12,20 +12,20 @@ private:
 	int32_t n = 0;
 	int32_t h = 0;
 
-	int32_t h2 = 0;
-	int32_t n2 = 0;
+	int32_t endH = 0;
+	int32_t endN = 0;
 
 	vector<TieredVector> children;
-	int32_t* elements;
+	vector<int32_t> elements;
 
-	int32_t elem(int32_t r) {
+	int32_t child(int32_t r) {
 		return (h + r) % m;
 	}
 
-	int32_t elem2(int32_t r) {
+	int32_t childEnd(int32_t r) {
 		if (k > 1)
 			throw exception("Can only call elem2 on a 1-tiered vector");
-		return (h2 + r) % m;
+		return (endH + r) % m;
 	}
 
 	void incH(int8_t inc) {
@@ -35,7 +35,7 @@ private:
 	void incH2(int8_t inc) {
 		if (k > 1)
 			throw exception("Can only call incH2 on a 1-tiered vector");
-		h2 = (h2 + inc + m) % m;
+		endH = (endH + inc + m) % m;
 	}
 
 	void init(int32_t k, int32_t size, bool topLevel) {
@@ -47,7 +47,7 @@ private:
 			throw invalid_argument("k must be a positive integer");
 		}
 		else if (k == 1) {
-			elements = (int32_t*)calloc(m, sizeof 0);
+			elements = vector<int32_t>(m);
 		}
 		else {
 			children;
@@ -105,28 +105,30 @@ private:
 		return n < m * m / 8;
 	}
 
-	int32_t getElemAt2(int32_t r) {
+	int32_t getElemAtEnd(int32_t r) {
 		if (k > 1)
 			throw exception("Can only call getElemAt2 on 1-tiered vector");
-		return elements[elem2(r)];
+		return elements[childEnd(r)];
 	}
 
-	void insertElemAt2(int32_t r, int32_t e) {
+	void insertElemAtEnd(int32_t r, int32_t e) {
 		if (k > 1)
 			throw exception("Can only call insertElemAt2 on 1-tiered vector");
-		if (n + n2 == m)
+		if (n + endN == m)
 			throw exception("Cannot insert if the deque is already full");
 
-		if (n2 == 0) {
-			h2 = (h + n) % m;
+		if (endN == 0) {
+			endH = h;
+			incH2(n);
 		}
-		for (int32_t i = h2 + n2; i > h2 + r; i--) {
+		for (int32_t i = endH + endN; i > endH + r; i--) {
 			elements[(i + m) % m] = elements[(i + m - 1) % m];
 		}
-		elements[elem2(r)] = e;
+		elements[childEnd(r)] = e;
+		endN++;
 	}
 
-	int32_t removeElemAt2(int32_t r) {
+	int32_t removeElemAtEnd(int32_t r) {
 		if (k > 1)
 			throw exception("Can only call removeElemAt2 on 1-tiered vector");
 
@@ -134,43 +136,33 @@ private:
 			halveSize();
 		}
 
-		int32_t e = elements[elem2(r)];
+		int32_t e = elements[childEnd(r)];
 
-		if (r < n - r) {
-			for (int32_t i = h + r; i > h; i--) {
-				elements[i % m] = elements[(i + m - 1) % m];
-			}
-			incH2(1);
+		for (int32_t i = endH + r; i < endH + endN; i++) {
+			elements[i % m] = elements[(i + m + 1) % m];
 		}
-		else {
-			for (int32_t i = h + r; i < h + n; i++) {
-				elements[i % m] = elements[(i + m + 1) % m];
-			}
-		}
-		n--;
-		h2 = n2 == 0 ? 0 : h2;
+		endN--;
 		return e;
 	}
 
-	void transferElementsToSecond() {
+	void transferElementsToEnd() {
 		if (k > 1)
 			throw exception("Can only call transferElementsToSecond on 1-tiered vector");
-		if (n2 != 0)
+		if (endN != 0)
 			throw exception("There must not be elements in the second part of the deque when transferring");
-		h2 = h;
-		n2 = n;
-		incH(-1);
+		endH = h;
+		endN = n;
 		n = 0;
 	}
 
-	void transferElementsToFirst() {
+	void transferElementsToStart() {
 		if (k > 1)
 			throw exception("Can only call transferElementsToFirst on 1-tiered vector");
 		if (n != 0)
 			throw exception("There must not be elements in the first part of the deque when transferring");
-		h = h2;
-		n = n2;
-		n2 = 0;
+		h = endH;
+		n = endN;
+		endN = 0;
 	}
 
 	TieredVector(int32_t k, bool topLevel) {
@@ -190,66 +182,6 @@ public:
 		init(k, size, true);
 	}
 
-	//TieredVector(TieredVector const& copy)
-	//{
-	//	k = copy.k;
-	//	m = copy.m;
-
-	//	if (k == 1) {
-	//		elements = (int32_t*)calloc(m, sizeof 0);
-	//		std::copy(&copy.elements[0], &copy.elements[copy.m], elements);
-	//	}
-	//	else {
-	//		children = (TieredVector*)calloc(m, sizeof this);
-	//		std::copy(&copy.children[0], &copy.children[copy.m], children);
-	//	}
-	//}
-
-	////TieredVector& operator=(TieredVector rhs) // Pass by value (thus generating a copy)
-	////{
-	////	rhs.swap(*this); // Now swap data with the copy.
-	////					 // The rhs parameter will delete the array when it
-	////					 // goes out of scope at the end of the function
-	////	return *this;
-	////}
-
-	//void swap(TieredVector& s) noexcept
-	//{
-	//	using std::swap;
-	//	swap(this->m, s.m);
-	//	swap(this->elements, s.elements);
-	//	swap(this->children, s.children);
-	//}
-
-	//// C++11
-	//TieredVector(TieredVector&& src) noexcept
-	//	: m(0)
-	//	, elements(NULL)
-	//	, children(NULL)
-	//{
-	//	src.swap(*this);
-	//}
-	//TieredVector& operator=(TieredVector&& src) noexcept
-	//{
-	//	src.swap(*this);     // You are moving the state of the src object
-	//						 // into this one. The state of the src object
-	//						 // after the move must be valid but indeterminate.
-	//						 //
-	//						 // The easiest way to do this is to swap the states
-	//						 // of the two objects.
-	//						 //
-	//						 // Note: Doing any operation on src after a move 
-	//						 // is risky (apart from destroy) until you put it 
-	//						 // into a specific state. Your object should have
-	//						 // appropriate methods for this.
-	//						 // 
-	//						 // Example: Assignment (operator = should work).
-	//						 //          std::vector() has clear() which sets
-	//						 //          a specific state without needing to
-	//						 //          know the current state.
-	//	return *this;
-	//}
-
 	~TieredVector(void) {
 		if (k == 1) {
 			//delete[] elements;
@@ -259,23 +191,26 @@ public:
 		}
 	}
 
-	int32_t size() {
+	uint32_t size() {
 		return n;
 	}
 
 	int32_t getElemAt(int32_t r) {
+		checkIndexOutOfBounds(r, n, "retrieve", "TieredVector");
 		if (k == 1) {
-			return elements[elem(r)];
+			return elements[child(r)];
 		}
 		else {
-			int32_t l0 = children[h].size();
-			int32_t i = (int32_t)ceil((double)(r + 1 - l0) / m);
-			int32_t newR = i == 0 ? r : (r - l0) % m;
+			int32_t l = (int32_t)pow(m, k - 1);
 
-			int32_t idx = elem(i);
+			int32_t n0 = children[h].size();
+			int32_t i = (int32_t)ceil((double)(r + 1 - n0) / l);
+			int32_t newR = i == 0 ? r : (r - n0) % l;
 
-			if (k == 2 && idx == h && r >= m) {
-				return children[idx].getElemAt2(newR);
+			int32_t idx = child(i);
+
+			if (k == 2 && idx == h && r >= l) {
+				return children[idx].getElemAtEnd(newR);
 			}
 			else {
 				return children[idx].getElemAt(newR);
@@ -290,9 +225,9 @@ public:
 		//	elements[elem(r)] = e;
 		//}
 		//else {
-		//	int32_t l0 = children[h].size();
-		//	int32_t i = (int32_t)ceil((double)(r + 1 - l0) / m);
-		//	int32_t newR = i == 0 ? r : (r - l0) % m;
+		//	int32_t n0 = children[h].size();
+		//	int32_t i = (int32_t)ceil((double)(r + 1 - n0) / m);
+		//	int32_t newR = i == 0 ? r : (r - n0) % m;
 
 		//	children[elem(i)].setElemAt(newR, e);
 		//}
@@ -301,13 +236,10 @@ public:
 	void insertElemAt(int32_t r, int32_t e) {
 #if DEBUG
 		checkIndexOutOfBounds(r, n + 1, "insert", "TieredVector");
+		if (n == pow(m, k)) {
+			throw exception("TieredVector is full");
+		}
 #endif
-		//if (r == n) {
-		//	return insertLast(e);
-		//}
-		//else if (r == 0) {
-		//	return insertFirst(e);
-		//}
 
 		if (isFull()) {
 			doubleSize();
@@ -316,7 +248,8 @@ public:
 		bool insertFront = r < n - r;
 
 		if (k == 1) {
-			if (insertFront || n2 > 0) { // Always have to insert from the front if the deque has "two" deques
+
+			if (insertFront || endN > 0) { // Always have to insert from the front if the deque has "two" deques
 				for (int32_t i = h; i < h + r; i++) {
 					elements[(i + m - 1) % m] = elements[i % m];
 				}
@@ -330,68 +263,80 @@ public:
 			elements[(h + r) % m] = e;
 		}
 		else {
-			// TODO: Do fancy stuff here
+			if (e == 22 && r == 23) {
+				cout << endl;
+			}
+			int32_t l = (int32_t)pow(m, k - 1);
+
 			int32_t n0 = children[h].size();
-			int32_t i = (int32_t)ceil((double)(r + 1 - n0) / m);
-			int32_t newR = i == 0 ? r : (r - n0) % m;
+			int32_t i = (int32_t)ceil((double)(r + 1 - n0) / l);
+			int32_t newR = i == 0 ? r : (r - n0) % l;
 
 			if (insertFront) {
 				if (children[h].isFull()) {
 					incH(-1);
 					i++;
-					if (!children[h].isEmpty()) {
-						children[h].transferElementsToSecond();
+					if (!children[h].isEmpty() && k == 2) {
+						children[h].transferElementsToEnd();
 					}
 				}
 				if (i > 0) {
 					newR--;
 					if (newR < 0) {
 						i--;
-						newR = i == 0 ? children[h].size() : m - 1;
+						newR = i == 0 ? children[h].size() : l - 1;
 					}
 				}
+
 				for (int32_t j = 0; j < i; j++) {
-					children[elem(j)].insertLast(children[elem(j + 1)].removeFirst());
+					children[child(j)].insertLast(children[child(j + 1)].removeFirst());
 				}
 
-				children[elem(i)].insertElemAt(newR, e);
+				if (k == 2 && child(i) == h && r > n0 && children[h].endN > 0) {
+					children[h].insertElemAtEnd(newR, e);
+				}
+				else {
+					children[child(i)].insertElemAt(newR, e);
+				}
 			}
 			else {
-				int32_t back = (int32_t)ceil((double)(n - n0) / m);
+				int32_t back = (int32_t)ceil((double)(n - n0) / l);
 
 				bool secondDequeExists = false;
 
-				if (children[elem(back)].isFull()) {
-					if (k == 2 && !children[elem(++back)].isEmpty()) {
+				if (children[child(back)].isFull()) {
+					if (!children[child(++back)].isEmpty() && k == 2) {
+						//children[h].transferElementsToSecond();
 						secondDequeExists = true;
 					}
 				}
 
-				secondDequeExists |= k == 2 && children[elem(back)].n2 > 0; // TODO: Highly doubt this works...
-				
-				if (k == 2 && elem(i) == h && r >= m) {
-					children[elem(back)].insertElemAt2(newR, e);
+				secondDequeExists |= (k == 2 && children[child(back)].endN > 0); // TODO: Highly doubt this works...
+
+				if (k == 2 && child(i) == h && r >= l) {
+					children[child(i)].insertElemAtEnd(newR, e);
 				}
 				else {
 					if (i < back) {
-						int32_t firstRemoval = children[elem(back - 1)].removeLast();
+						int32_t firstRemoval = children[child(back - 1)].removeLast();
 						if (secondDequeExists) {
-							children[elem(back)].insertElemAt2(0, firstRemoval);
+							children[child(back)].insertElemAtEnd(0, firstRemoval);
 						}
 						else {
-							children[elem(back)].insertFirst(firstRemoval);
+							children[child(back)].insertFirst(firstRemoval);
 						}
 						for (int32_t j = back - 1; j > i; j--) {
-							children[elem(j)].insertFirst(children[elem(j - 1)].removeLast());
+							children[child(j)].insertFirst(children[child(j - 1)].removeLast());
 						}
 					}
-					children[elem(i)].insertElemAt(newR, e);
+					children[child(i)].insertElemAt(newR, e);
 				}
 
 			}
 
-
 			if (children[h].isEmpty()) {
+				if (k == 2 && children[h].endN > 0)
+					children[h].transferElementsToStart();
 				incH(1);
 			}
 		}
@@ -401,43 +346,16 @@ public:
 
 	void insertFirst(int32_t e) {
 		return insertElemAt(0, e);
-		// TODO: Make sure the below works
-		if (isFull()) {
-			doubleSize();
-		}
-
-		if (k == 1) {
-			incH(-1);
-			elements[h] = e;
-		}
-		else {
-			if (children[h].isFull())
-				h--;
-			children[h].insertFirst(e);
-		}
-		n++;
 	}
 
 	void insertLast(int32_t e) {
 		return insertElemAt(n, e);
-		// TODO: Make sure the below works
-		if (isFull()) {
-			doubleSize();
-		}
-
-		if (k == 1) {
-			elements[(h + n) % m] = e;
-		}
-		else {
-			int32_t i = n / m;
-			if (children[elem(i)].isFull())
-				i++;
-			children[elem(i)].insertLast(e);
-		}
-		n++;
 	}
 
 	int32_t removeElemAt(int32_t r) {
+#if DEBUG
+		checkIndexOutOfBounds(r, n, "remove", "TieredVector");
+#endif
 		if (topLevel && tooEmpty()) {
 			halveSize();
 		}
@@ -446,9 +364,9 @@ public:
 		bool removeFront = r < n - r;
 
 		if (k == 1) {
-			e = elements[elem(r)];
+			e = elements[child(r)];
 
-			if (removeFront || n2 > 0) {
+			if (removeFront || endN > 0) {
 				for (int32_t i = h + r; i > h; i--) {
 					elements[i % m] = elements[(i + m - 1) % m];
 				}
@@ -462,47 +380,53 @@ public:
 			h = isEmpty() ? 0 : h;
 		}
 		else {
-			int32_t l0 = children[h].size();
-			int32_t i = (int32_t)ceil((double)(r + 1 - l0) / m);
-			int32_t newR = i == 0 ? r : (r - l0) % m;
+			int32_t l = (int32_t)pow(m, k - 1);
+
+			int32_t n0 = children[h].size();
+			int32_t i = (int32_t)ceil((double)(r + 1 - n0) / l);
+			int32_t newR = i == 0 ? r : (r - n0) % l;
 
 			if (removeFront) {
-				e = children[elem(i)].removeElemAt(newR);
+				e = children[child(i)].removeElemAt(newR);
 
 				for (int32_t j = i; j > 0; j--) {
-					children[elem(j)].insertFirst(children[elem(j - 1)].removeLast());
+					children[child(j)].insertFirst(children[child(j - 1)].removeLast());
 				}
 
 				if (children[h].isEmpty()) {
-					if (k == 2 && children[h].n2 > 0)
-						children[h].transferElementsToFirst();
+					if (k == 2 && children[h].endN > 0)
+						children[h].transferElementsToStart();
 					incH(1);
 				}
 			}
 			else {
-				int32_t back = (int32_t)ceil((double)(n - l0) / m);
+				int32_t back = (int32_t)ceil((double)(n - n0) / l);
 
-				if (k == 2 && back == i && children[elem(i)].n2 > 0) {
-					e = children[elem(i)].removeElemAt2(newR);
+				if (children[child(back)].endN > 0) {
+					if (i == back) {
+						e = children[child(i)].removeElemAtEnd(newR);
+					}
+					else {
+						e = children[child(i)].removeElemAt(newR);
+
+						for (int32_t j = i; j < back - 1; j++) {
+							children[child(j)].insertLast(children[child(j + 1)].removeFirst());
+						}
+
+						children[child(back - 1)].insertLast(children[child(back)].removeElemAtEnd(0));
+					}
 				}
 				else {
-					e = children[elem(i)].removeElemAt(newR);
-				}				
+					e = children[child(i)].removeElemAt(newR);
 
-				if (children[elem(back)].isEmpty()) {
-					back--;
-				}
-
-				for (int32_t j = i; j < back; j++) {
-					children[elem(j)].insertLast(children[elem(j + 1)].removeFirst());
+					for (int32_t j = i; j < back; j++) {
+						children[child(j)].insertLast(children[child(j + 1)].removeFirst());
+					}
 				}
 			}
 		}
 
 		n--;
-		//if (k == 2 && n == 0) {
-		//	return h;
-		//}
 		return e;
 	}
 
@@ -528,11 +452,11 @@ public:
 
 		string s = "{ ";
 
-		if (n2 > 0) {
-			s += to_string(elements[h2]);
+		if (endN > 0) {
+			s += to_string(elements[endH]);
 		}
-		for (int32_t i = 1; i <= n2; i++) {
-			s += ", " + to_string(elements[elem2(i)]);
+		for (int32_t i = 1; i < endN; i++) {
+			s += ", " + to_string(elements[childEnd(i)]);
 		}
 
 		return s += " }";
@@ -545,7 +469,7 @@ public:
 				s += to_string(elements[h]);
 			}
 			for (int32_t i = 1; i < n; i++) {
-				s += ", " + to_string(elements[elem(i)]);
+				s += ", " + to_string(elements[child(i)]);
 			}
 		}
 		else {
@@ -553,10 +477,11 @@ public:
 				s += children[h].toStringPretty();
 			}
 			for (int32_t i = 1; i < m; i++) {
-				s += ", " + children[elem(i)].toStringPretty();
+				s += ", " + children[child(i)].toStringPretty();
 			}
 			TieredVector firstChild = children[h];
-			if (k == 2 && firstChild.n2 > 0) {
+
+			if (k == 2 && firstChild.endN > 0) {
 				s += ", " + firstChild.toStringPretty2();
 			}
 		}
@@ -582,6 +507,9 @@ public:
 				s += ", " + children[i].toString();
 			}
 		}
+		//for (int32_t i = 0; i < size(); i++) {
+		//	s += to_string(getElemAt(i)) + ", ";
+		//}
 		return s += " }";
 	}
 };

@@ -29,9 +29,10 @@ linear_congruential_engine<uint32_t, 48271, 0, 2147483647> rand_engine(1);
 #define INTERVAL 500
 #define AMOUNT 9
 
-#define HEADERS "size;array;vector;bst;deque;bittrick deque;tiered vector (k=2);bittrick tiered vector (k=2);deque tiered vector (k=2)\n"
+#define HEADERS "size;array;vector;bst;1-tiered vector;bit trick 1-tiered vector;simple 2-tiered vector;bit trick simple 2-tiered vector;deque 2-tiered vector;bit trick deque 2-tiered vector;\n"
+#define DIR "../../results/"
 
-#define ARRAY_AMOUNT 200000
+#define ARRAY_AMOUNT 500000
 
 /*
 Insertion
@@ -96,8 +97,8 @@ double* benchmarkInsertionBST() {
 	random_shuffle(numbers, numbers + total); // Shuffle the numbers
 
 	for (int32_t i = 0; i < TESTS; i++) {
-		double start = TIMER_FUNC();
 		int32_t elems = s.size();
+		double start = TIMER_FUNC();
 		for (int32_t j = elems; j < elems + INSERTIONS; j++) {
 			s.insert(numbers[j]);
 		}
@@ -112,7 +113,7 @@ double* benchmarkInsertionBST() {
 	return result;
 }
 
-double* benchmarkInsertion(RankSequence &ds) {
+double* benchmarkInsertion(ArrayDataStructure &ds) {
 	double* result = new double[TESTS];
 	for (int32_t i = 0; i < TESTS; i++) {
 		double start = TIMER_FUNC();
@@ -140,32 +141,29 @@ double* benchmarkInsertionBitTrickDeque() {
 	return benchmarkInsertion(deque);
 }
 
-double* benchmarkInsertionK2TieredVector() {
-	K2TieredVector tv;
-	return benchmarkInsertion(tv);
-}
-
-double* benchmarkInsertionBitTrickK2TieredVector() {
-	BitTrickK2TieredVector tv;
-	return benchmarkInsertion(tv);
-}
-
-double* benchmarkInsertionDequeK2TieredVector() {
-	DequeK2TieredVector tv;
-	return benchmarkInsertion(tv);
-}
-
 double* benchmarkInsertion2TieredVector() {
-	TieredVector tv(2);
+	Simple2TieredVector tv;
+	return benchmarkInsertion(tv);
+}
+
+double* benchmarkInsertionBitTrick2TieredVector() {
+	BitTrickSimple2TieredVector tv;
+	return benchmarkInsertion(tv);
+}
+
+double* benchmarkInsertionDeque2TieredVector() {
+	Deque2TieredVector tv;
+	return benchmarkInsertion(tv);
+}
+
+double* benchmarkInsertionBitTrickDeque2TieredVector() {
+	BitTrickDeque2TieredVector tv;
 	return benchmarkInsertion(tv);
 }
 
 void benchmarkInsertion()
 {
-	// Data structures: array, vector, (bst = red-black tree i.e. bbst), tiered vector
 	double* (*functions[AMOUNT])() = {
-		&benchmarkInsertion2TieredVector
-		,
 		&benchmarkInsertionArray
 		,
 		&benchmarkInsertionVector
@@ -176,11 +174,13 @@ void benchmarkInsertion()
 		,
 		&benchmarkInsertionBitTrickDeque
 		,
-		&benchmarkInsertionK2TieredVector
+		&benchmarkInsertion2TieredVector
 		,
-		&benchmarkInsertionBitTrickK2TieredVector
+		&benchmarkInsertionBitTrick2TieredVector
 		,
-		&benchmarkInsertionDequeK2TieredVector
+		&benchmarkInsertionDeque2TieredVector
+		,
+		&benchmarkInsertionBitTrickDeque2TieredVector
 	};
 
 	double results[AMOUNT][TESTS];
@@ -194,7 +194,7 @@ void benchmarkInsertion()
 	}
 
 	ofstream outfile;
-	outfile.open("insertion.txt");
+	outfile.open(DIR "insertion.txt");
 	outfile << HEADERS;
 	for (int32_t i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * i;
@@ -265,7 +265,6 @@ double* benchmarkRemovalVector() {
 	return result;
 }
 
-
 double* benchmarkRemovalBST() {
 	set<int32_t> s;
 	double* result = new double[TESTS];
@@ -298,7 +297,7 @@ double* benchmarkRemovalBST() {
 	return result;
 }
 
-double* benchmarkRemoval(RankSequence &ds) {
+double* benchmarkRemoval(ArrayDataStructure &ds) {
 	double* result = new double[TESTS];
 
 	for (int32_t i = 0; i < TESTS * INTERVAL; i++) {
@@ -332,18 +331,23 @@ double* benchmarkRemovalBitTrickDeque() {
 	return benchmarkRemoval(deque);
 }
 
-double* benchmarkRemovalK2TieredVector() {
-	K2TieredVector tv;
+double* benchmarkRemoval2TieredVector() {
+	Simple2TieredVector tv;
 	return benchmarkRemoval(tv);
 }
 
-double* benchmarkRemovalBitTrickK2TieredVector() {
-	BitTrickK2TieredVector tv;
+double* benchmarkRemovalBitTrick2TieredVector() {
+	BitTrickSimple2TieredVector tv;
 	return benchmarkRemoval(tv);
 }
 
-double* benchmarkRemovalDequeK2TieredVector() {
-	DequeK2TieredVector tv;
+double* benchmarkRemovalDeque2TieredVector() {
+	Deque2TieredVector tv;
+	return benchmarkRemoval(tv);
+}
+
+double* benchmarkRemovalBitTrickDeque2TieredVector() {
+	BitTrickDeque2TieredVector tv;
 	return benchmarkRemoval(tv);
 }
 
@@ -360,11 +364,13 @@ void benchmarkRemoval()
 		,
 		&benchmarkRemovalBitTrickDeque
 		,
-		&benchmarkRemovalK2TieredVector
+		&benchmarkRemoval2TieredVector
 		,
-		&benchmarkRemovalBitTrickK2TieredVector
+		&benchmarkRemovalBitTrick2TieredVector
 		,
-		&benchmarkRemovalDequeK2TieredVector
+		&benchmarkRemovalDeque2TieredVector
+		,
+		&benchmarkRemovalBitTrickDeque2TieredVector
 	};
 
 	double results[AMOUNT][TESTS];
@@ -378,7 +384,7 @@ void benchmarkRemoval()
 	}
 
 	ofstream outfile;
-	outfile.open("removal.txt");
+	outfile.open(DIR "removal.txt");
 	outfile << HEADERS;
 	for (int32_t i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * (TESTS - i);
@@ -408,7 +414,7 @@ double* benchmarkAccessArray() {
 
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < ACCESSES; j++) {
-			noop(a[order[j]]);
+			a[order[j]];
 		}
 		double end = TIMER_FUNC();
 		result[i] = end - start;
@@ -470,7 +476,7 @@ double* benchmarkAccessBST() {
 	return result;
 }
 
-double* benchmarkAccess(RankSequence &ds) {
+double* benchmarkAccess(ArrayDataStructure &ds) {
 	double* result = (double*)calloc(TESTS, sizeof 0.0);
 
 	for (int32_t i = 0; i < TESTS; i++) {
@@ -504,32 +510,29 @@ double* benchmarkAccessBitTrickDeque() {
 	return benchmarkAccess(deque);
 }
 
-double* benchmarkAccessK2TieredVector() {
-	K2TieredVector tv;
-	return benchmarkAccess(tv);
-}
-
-double* benchmarkAccessBitTrickK2TieredVector() {
-	BitTrickK2TieredVector tv;
-	return benchmarkAccess(tv);
-}
-
-double* benchmarkAccessDequeK2TieredVector() {
-	DequeK2TieredVector tv;
-	return benchmarkAccess(tv);
-}
-
 double* benchmarkAccess2TieredVector() {
-	TieredVector tv(2, 32);
+	Simple2TieredVector tv;
+	return benchmarkAccess(tv);
+}
+
+double* benchmarkAccessBitTrick2TieredVector() {
+	BitTrickSimple2TieredVector tv;
+	return benchmarkAccess(tv);
+}
+
+double* benchmarkAccessDeque2TieredVector() {
+	Deque2TieredVector tv;
+	return benchmarkAccess(tv);
+}
+
+double* benchmarkAccessBitTrickDeque2TieredVector() {
+	BitTrickDeque2TieredVector tv;
 	return benchmarkAccess(tv);
 }
 
 void benchmarkAccess()
 {
-	const int tempAmount = 9;
-	double* (*functions[tempAmount])() = {
-		&benchmarkAccess2TieredVector
-		,
+	double* (*functions[AMOUNT])() = {
 		&benchmarkAccessArray
 		,
 		&benchmarkAccessVector
@@ -540,15 +543,17 @@ void benchmarkAccess()
 		,
 		&benchmarkAccessBitTrickDeque
 		,
-		&benchmarkAccessK2TieredVector
+		&benchmarkAccess2TieredVector
 		,
-		&benchmarkAccessBitTrickK2TieredVector
+		&benchmarkAccessBitTrick2TieredVector
 		,
-		&benchmarkAccessDequeK2TieredVector		,
+		&benchmarkAccessDeque2TieredVector
+		,
+		&benchmarkAccessBitTrickDeque2TieredVector
 	};
 
-	double results[tempAmount][TESTS];
-	for (int32_t i = 0; i < tempAmount; i++) {
+	double results[AMOUNT][TESTS];
+	for (int32_t i = 0; i < AMOUNT; i++) {
 		RESEED(SEED);
 		double* result = functions[i]();
 		cout << i << " done" << endl;
@@ -558,11 +563,11 @@ void benchmarkAccess()
 	}
 
 	ofstream outfile;
-	outfile.open("access.txt");
+	outfile.open(DIR "access_opt.txt");
 	outfile << HEADERS;
 	for (int32_t i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * i;
-		for (int32_t j = 0; j < tempAmount; j++) {
+		for (int32_t j = 0; j < AMOUNT; j++) {
 			outfile << ";" << results[j][i];
 		}
 		outfile << "\n";
@@ -572,7 +577,7 @@ void benchmarkAccess()
 
 int main()
 {
-	benchmarkInsertion();
+	//benchmarkInsertion();
 	//benchmarkRemoval();
 	//benchmarkAccess();
 

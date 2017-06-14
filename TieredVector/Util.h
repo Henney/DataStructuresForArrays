@@ -22,15 +22,11 @@ static void checkIndexOutOfBounds(int32_t r, int32_t size, string op, string typ
 	}
 }
 
-class RankSequence {
+class ArrayDataStructure {
 public:
-	virtual int32_t size() = 0;
+	virtual uint32_t size() = 0;
 
-	const int32_t operator[](const int32_t index)
-	{
-		assert(index >= 0 && index < size());
-		return getElemAt(index);
-	}
+	const int32_t operator[](const int32_t index) { return getElemAt(index); }
 
 	virtual int32_t getElemAt(int32_t) = 0;
 	virtual void setElemAt(int32_t, int32_t) = 0;

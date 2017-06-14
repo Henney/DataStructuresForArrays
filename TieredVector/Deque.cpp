@@ -5,45 +5,44 @@
 #include "Util.h"
 #endif // ! _UTIL_INCLUDED
 
-class Deque : public RankSequence {
-	friend class K2TieredVector;
-	friend class DequeK2TieredVector;
+class Deque : public ArrayDataStructure {
+	friend class Simple2TieredVector;
 private:
 	int32_t n = 0;
 	int32_t h = 0;
 	int32_t m = 0;	// Capacity/length of the current deque
 	bool topLevel = false;
 
-	int32_t* a;		// The array
+	vector<int32_t> a;		// The array
 
 	void init(int32_t capacity, bool topLevel) {
 		if ((capacity - 1) & capacity)
 			throw invalid_argument("capacity must be a power of two");
 		this->topLevel = topLevel;
-		this->a = new int32_t[capacity];
 		this->m = capacity;
+		this->a = vector<int32_t>(m);
 	}
 	void incH(int8_t inc) {
 		h = (h + m + inc) % m;
 	}
 
 	void doubleSize() {
-		int32_t *b = new int32_t[m * 2];
+		vector<int32_t> b(m * 2);
 		for (int32_t i = 0; i < n; i++) {
 			b[i] = getElemAt(i);
 		}
-		delete[] a;
+		//delete &a;
 		this->a = b;
 		m *= 2;
 		h = 0;
 	}
 
 	void halveSize() {
-		int32_t *b = new int32_t[m / 2];
+		vector<int32_t> b(m / 2);
 		for (int32_t i = 0; i < m / 2; i++) {
 			b[i] = getElemAt(i);
 		}
-		delete[] a;
+		//delete &a;
 		this->a = b;
 		m /= 2;
 		h = 0;
@@ -57,7 +56,7 @@ public:
 		init(capacity, false);
 	}
 
-	Deque(bool topLevel) {
+	Deque(bool topLevel) { // TODO: topLevel should not be exposed
 		init(DEFAULT_SIZE, topLevel);
 	}
 
@@ -65,7 +64,12 @@ public:
 		init(DEFAULT_SIZE, false);
 	}
 
-	int32_t size() {
+	~Deque(void) {
+		a.clear();
+		vector<int32_t>().swap(a);
+	}
+
+	uint32_t size() {
 		return n;
 	}
 
@@ -98,7 +102,6 @@ public:
 	}
 
 	void insertElemAt(int32_t r, int32_t e) {
-		checkIndexOutOfBounds(r, n + 1, "insert", "CircularDeque");
 		if (isFull()) {
 			doubleSize();
 		}
@@ -138,10 +141,6 @@ public:
 	}
 
 	int32_t removeElemAt(int32_t r) {
-#if DEBUG
-		checkIndexOutOfBounds(r, n, "remove", "CircularDeque");
-		cout << "removing at " << r << ". n: " << n << endl;
-#endif
 		if (topLevel && n < m / 4) {
 			halveSize();
 		}
@@ -218,8 +217,9 @@ public:
 	}
 };
 
-class BitTrickDeque : public RankSequence {
-	friend class BitTrickK2TieredVector;
+class BitTrickDeque : public ArrayDataStructure {
+	friend class BitTrickSimple2TieredVector;
+	friend class UnamortisedBitTrickSimple2TieredVector;
 private:
 	int32_t n = 0;
 	int32_t h = 0;
@@ -227,26 +227,26 @@ private:
 	int8_t shift;
 	bool topLevel = false;
 
-	int32_t *a;		// The array
+	vector<int32_t> a;		// The array
 
 	void init(int32_t capacity, bool topLevel) {
 		if ((capacity - 1) & capacity)
 			throw invalid_argument("capacity must be a power of two");
 		this->topLevel = topLevel;
-		this->a = new int32_t[capacity];
 		this->m = capacity;
-		shift = (int8_t)log2(capacity);
+		this->a = vector<int32_t>(m);
+		shift = (int8_t)log2(m);
 	}
 	void incH(int8_t inc) {
 		h = (h + m + inc) & (m - 1);
 	}
 
 	void doubleSize() {
-		int32_t *b = new int32_t[m << 1];
+		vector<int32_t> b(m << 1);
 		for (int32_t i = 0; i < n; i++) {
 			b[i] = getElemAt(i);
 		}
-		delete[] a;
+		//delete[] a;
 		this->a = b;
 		m = m << 1;
 		h = 0;
@@ -255,11 +255,11 @@ private:
 	}
 
 	void halveSize() {
-		int32_t *b = new int32_t[m >> 1];
+		vector<int32_t> b(m >> 1);
 		for (int32_t i = 0; i < m >> 1; i++) {
 			b[i] = getElemAt(i);
 		}
-		delete[] a;
+		//delete[] a;
 		this->a = b;
 		m = m >> 1;
 		h = 0;
@@ -281,7 +281,12 @@ public:
 		init(DEFAULT_SIZE, false);
 	}
 
-	int32_t size() {
+	~BitTrickDeque(void) {
+		a.clear();
+		vector<int32_t>().swap(a);
+	}
+
+	uint32_t size() {
 		return n;
 	}
 
@@ -314,9 +319,6 @@ public:
 	}
 
 	void insertElemAt(int32_t r, int32_t e) {
-#if DEBUG
-		checkIndexOutOfBounds(r, n + 1, "insert", "CircularDeque");
-#endif
 		if (isFull()) {
 			doubleSize();
 		}
@@ -354,9 +356,6 @@ public:
 	}
 
 	int32_t removeElemAt(int32_t r) {
-#if DEBUG
-		checkIndexOutOfBounds(r, n, "remove", "CircularDeque");
-#endif
 		if (topLevel && n < m / 4) {
 			halveSize();
 		}
