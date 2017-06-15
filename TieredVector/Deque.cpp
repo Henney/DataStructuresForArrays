@@ -26,23 +26,21 @@ private:
 		h = (h + m + inc) % m;
 	}
 
-	void doubleSize() {
+	void increaseCapacity() {
 		vector<int32_t> b(m * 2);
 		for (int32_t i = 0; i < n; i++) {
 			b[i] = getElemAt(i);
 		}
-		//delete &a;
 		this->a = b;
 		m *= 2;
 		h = 0;
 	}
 
-	void halveSize() {
+	void decreaseCapacity() {
 		vector<int32_t> b(m / 2);
 		for (int32_t i = 0; i < m / 2; i++) {
 			b[i] = getElemAt(i);
 		}
-		//delete &a;
 		this->a = b;
 		m /= 2;
 		h = 0;
@@ -103,7 +101,7 @@ public:
 
 	void insertElemAt(int32_t r, int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		if (r >= m - r) {
@@ -122,7 +120,7 @@ public:
 
 	void insertFirst(int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 		incH(-1);
 		a[h] = e;
@@ -130,11 +128,8 @@ public:
 	}
 
 	void insertLast(int32_t e) {
-#if DEBUG
-		cout << "Adding element " << e << " last in Deque. n: " << n << endl;
-#endif
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 		a[(h + n) % m] = e;
 		n++;
@@ -142,7 +137,7 @@ public:
 
 	int32_t removeElemAt(int32_t r) {
 		if (topLevel && n < m / 4) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t e = a[(h + r) % m];
@@ -219,7 +214,6 @@ public:
 
 class BitTrickDeque : public ArrayDataStructure {
 	friend class BitTrickSimple2TieredVector;
-	friend class UnamortisedBitTrickSimple2TieredVector;
 private:
 	int32_t n = 0;
 	int32_t h = 0;
@@ -241,12 +235,11 @@ private:
 		h = (h + m + inc) & (m - 1);
 	}
 
-	void doubleSize() {
+	void increaseCapacity() {
 		vector<int32_t> b(m << 1);
 		for (int32_t i = 0; i < n; i++) {
 			b[i] = getElemAt(i);
 		}
-		//delete[] a;
 		this->a = b;
 		m = m << 1;
 		h = 0;
@@ -254,12 +247,11 @@ private:
 		shift++;
 	}
 
-	void halveSize() {
+	void decreaseCapacity() {
 		vector<int32_t> b(m >> 1);
 		for (int32_t i = 0; i < m >> 1; i++) {
 			b[i] = getElemAt(i);
 		}
-		//delete[] a;
 		this->a = b;
 		m = m >> 1;
 		h = 0;
@@ -320,7 +312,7 @@ public:
 
 	void insertElemAt(int32_t r, int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		if (r >= m - r) {
@@ -340,7 +332,7 @@ public:
 
 	void insertFirst(int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 		incH(-1);
 		a[h] = e;
@@ -349,7 +341,7 @@ public:
 
 	void insertLast(int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 		a[(h + n) & (m - 1)] = e;
 		n++;
@@ -357,7 +349,7 @@ public:
 
 	int32_t removeElemAt(int32_t r) {
 		if (topLevel && n < m / 4) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t e = a[(h + r) & (m - 1)];

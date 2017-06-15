@@ -57,7 +57,7 @@ private:
 		}
 	}
 
-	void doubleSize() {
+	void increaseCapacity() {
 		//Deque *newA = new Deque[m * 2];
 		//for (int32_t i = 0; i < m * 2; i++) {
 		//	delete[](newA[i].a);
@@ -79,7 +79,7 @@ private:
 		//h = 0;
 	}
 
-	void halveSize() {
+	void decreaseCapacity() {
 		//Deque *newA = new Deque[m / 2];
 
 		//for (int32_t i = 0; i < m / 2; i++) {
@@ -133,7 +133,7 @@ private:
 			throw exception("Can only call removeElemAt2 on 1-tiered vector");
 
 		if (topLevel && tooEmpty()) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t e = elements[childEnd(r)];
@@ -242,7 +242,7 @@ public:
 #endif
 
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		bool insertFront = r < n - r;
@@ -357,7 +357,7 @@ public:
 		checkIndexOutOfBounds(r, n, "remove", "TieredVector");
 #endif
 		if (topLevel && tooEmpty()) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t e;

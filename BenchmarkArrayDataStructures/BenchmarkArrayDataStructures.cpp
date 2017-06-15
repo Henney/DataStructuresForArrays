@@ -17,7 +17,6 @@ linear_congruential_engine<uint32_t, 48271, 0, 2147483647> rand_engine(1);
 #define RAND_FUNC rand_engine
 #define RESEED(x) rand_engine.seed(x)
 
-
 #define MIN(a, b) (a < b ? a : b)
 #define SEED 3938
 #define TIMER_FUNC get_wall_time
@@ -28,11 +27,15 @@ linear_congruential_engine<uint32_t, 48271, 0, 2147483647> rand_engine(1);
 #define ACCESSES 100000
 #define INTERVAL 500
 #define AMOUNT 9
+#define INSERT_AMOUNT 10
+#define DEAMOR_AMOUNT 2
+#define DEAMOR_TESTS 4107
 
-#define HEADERS "size;array;vector;bst;1-tiered vector;bit trick 1-tiered vector;simple 2-tiered vector;bit trick simple 2-tiered vector;deque 2-tiered vector;bit trick deque 2-tiered vector;\n"
+#define HEADERS "size;array;vector;bst;1-tiered vector;bit trick 1-tiered vector;simple 2-tiered vector;bit trick simple 2-tiered vector;deque 2-tiered vector;bit trick deque 2-tiered vector;deamortised bit trick simple 2-tiered vector;\n"
 #define DIR "../../results/"
 
 #define ARRAY_AMOUNT 500000
+
 
 /*
 Insertion
@@ -161,9 +164,14 @@ double* benchmarkInsertionBitTrickDeque2TieredVector() {
 	return benchmarkInsertion(tv);
 }
 
+double* benchmarkInsertionDeamortisedBitTrickSimple2TieredVector() {
+	DeamortisedBitTrickSimple2TieredVector tv;
+	return benchmarkInsertion(tv);
+}
+
 void benchmarkInsertion()
 {
-	double* (*functions[AMOUNT])() = {
+	double* (*functions[INSERT_AMOUNT])() = {
 		&benchmarkInsertionArray
 		,
 		&benchmarkInsertionVector
@@ -181,10 +189,12 @@ void benchmarkInsertion()
 		&benchmarkInsertionDeque2TieredVector
 		,
 		&benchmarkInsertionBitTrickDeque2TieredVector
+		,
+		&benchmarkInsertionDeamortisedBitTrickSimple2TieredVector
 	};
 
-	double results[AMOUNT][TESTS];
-	for (int32_t i = 0; i < AMOUNT; i++) {
+	double results[INSERT_AMOUNT][TESTS];
+	for (int32_t i = 0; i < INSERT_AMOUNT; i++) {
 		RESEED(SEED);
 		double* result = functions[i]();
 		cout << i << " done" << endl;
@@ -198,7 +208,7 @@ void benchmarkInsertion()
 	outfile << HEADERS;
 	for (int32_t i = 0; i < TESTS; i++) {
 		outfile << INTERVAL * i;
-		for (int32_t j = 0; j < AMOUNT; j++) {
+		for (int32_t j = 0; j < INSERT_AMOUNT; j++) {
 			outfile << ";" << results[j][i];
 		}
 		outfile << "\n";
@@ -351,6 +361,11 @@ double* benchmarkRemovalBitTrickDeque2TieredVector() {
 	return benchmarkRemoval(tv);
 }
 
+double* benchmarkRemovalDeamortisedBitTrickSimple2TieredVector() {
+	DeamortisedBitTrickSimple2TieredVector tv;
+	return benchmarkRemoval(tv);
+}
+
 void benchmarkRemoval()
 {
 	double* (*functions[AMOUNT])() = {
@@ -441,7 +456,7 @@ double* benchmarkAccessVector() {
 
 		double start = TIMER_FUNC();
 		for (int32_t j = 0; j < ACCESSES; j++) {
-			v.at(order[j]);
+			v[order[j]];
 		}
 		double end = TIMER_FUNC();
 		result[i] = end - start;
@@ -530,6 +545,11 @@ double* benchmarkAccessBitTrickDeque2TieredVector() {
 	return benchmarkAccess(tv);
 }
 
+double* benchmarkAccessDeamortisedBitTrickSimple2TieredVector() {
+	DeamortisedBitTrickSimple2TieredVector tv;
+	return benchmarkAccess(tv);
+}
+
 void benchmarkAccess()
 {
 	double* (*functions[AMOUNT])() = {
@@ -575,11 +595,96 @@ void benchmarkAccess()
 	outfile.close();
 }
 
+double* benchmarkDeamortisation(ArrayDataStructure &ds) {
+	double* result = (double*)calloc(DEAMOR_TESTS, sizeof 0.0);
+	
+	int32_t resIndex = 0;
+	for (int32_t i = 0; resIndex < DEAMOR_TESTS; i++) {
+		int32_t idx = RAND_FUNC() % (i + 1);
+		double start = TIMER_FUNC();
+		ds.insertElemAt(idx, 1); // TODO: Perhaps insert random numbers
+		double end = TIMER_FUNC();
+
+		double time = end - start;
+		int32_t lgi = (int32_t)floor(log2(i));
+		if (lgi % 2 != 0) continue;
+		lgi = (int32_t)pow(2, lgi);
+		int32_t inc = (int32_t)floor(log2(sqrt(i)));
+		inc = (int32_t)pow(2, inc);
+		if (i <= lgi + inc) {
+			cout << i << endl;
+			cout << "lgi " << lgi << endl;
+			cout << "inc " << inc << endl;
+			result[resIndex++] = time;
+		}
+		if (i % 100000 == 0) {
+			cout << i << endl;
+			cout << resIndex << endl;
+		}
+	}
+	return result;
+}
+
+double* benchmarkDeamortisationBitTrickSimple2TieredVector() {
+	BitTrickSimple2TieredVector tv;
+	return benchmarkDeamortisation(tv);
+}
+
+double* benchmarkDeamortisationDeamortisedBitTrickSimple2TieredVector() {
+	DeamortisedBitTrickSimple2TieredVector tv;
+	return benchmarkDeamortisation(tv);
+}
+
+void benchmarkDeamortisation()
+{
+	double* (*functions[DEAMOR_AMOUNT])() = {
+		&benchmarkDeamortisationBitTrickSimple2TieredVector
+		,
+		&benchmarkDeamortisationDeamortisedBitTrickSimple2TieredVector
+	};
+
+	int sizes[DEAMOR_TESTS];
+	int32_t idx = 0;
+	for (int32_t i = 0; idx < DEAMOR_TESTS; i++) {
+		int32_t lgi = (int32_t)floor(log2(i));
+		if (lgi % 2 != 0) continue;
+		lgi = (int32_t)pow(2, lgi);
+		int32_t inc = (int32_t)floor(log2(sqrt(i)));
+		inc = (int32_t)pow(2, inc);
+		if (i <= lgi + inc) {
+			sizes[idx++] = i;
+		}
+	}
+
+	double results[DEAMOR_AMOUNT][DEAMOR_TESTS];
+	for (int32_t i = 0; i < DEAMOR_AMOUNT; i++) {
+		RESEED(SEED);
+		double* result = functions[i]();
+		cout << i << " done" << endl;
+		for (int32_t j = 0; j < DEAMOR_TESTS; j++) {
+			results[i][j] = result[j];
+		}
+	}
+
+	ofstream outfile;
+	outfile.open(DIR "deamortisation.txt");
+	outfile << "size;bit trick simple 2-tiered vector;deamortised bit trick simple 2-tiered vector;\n";
+	for (int32_t i = 0; i < DEAMOR_TESTS; i++) {
+		outfile << sizes[i];
+		for (int32_t j = 0; j < DEAMOR_AMOUNT; j++) {
+			outfile << ";" << results[j][i];
+		}
+		outfile << "\n";
+	}
+	outfile.close();
+}
+
 int main()
 {
 	//benchmarkInsertion();
 	//benchmarkRemoval();
-	//benchmarkAccess();
+	benchmarkAccess();
+	//benchmarkDeamortisation();
 
 	string s;
 	cin >> s;

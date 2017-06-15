@@ -13,19 +13,19 @@ protected:
 		this->children = vector<Deque>(m);
 	}
 
-	void doubleSize() {
+	void increaseCapacity() {
 		int32_t oldM = m;
 		m *= 2;
 
-		vector<Deque> newSubvectors(m);
+		vector<Deque> newChildren(m);
 		for (int32_t i = 0; i < oldM; i++) {
-			newSubvectors[i] = children[i];
-			newSubvectors[i].doubleSize();
+			newChildren[i] = children[i];
+			newChildren[i].increaseCapacity();
 		}
 		for (int32_t i = oldM; i < m; i++) {
-			newSubvectors[i] = Deque(m);
+			newChildren[i] = Deque(m);
 		}
-		children = newSubvectors;
+		children = newChildren;
 
 		// Move everything to the lower 1/4 of the current TV
 		int32_t nextDequeWithElems = 1;
@@ -46,7 +46,7 @@ protected:
 		}
 	}
 
-	void halveSize() {
+	void decreaseCapacity() {
 		vector<Deque> newA(m / 2);
 
 		for (int32_t i = 0; i < m / 2; i++) {
@@ -96,7 +96,7 @@ public:
 
 	void insertElemAt(int32_t r, int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = r / m;
@@ -116,7 +116,7 @@ public:
 
 	void insertLast(int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = n / m;
@@ -128,12 +128,12 @@ public:
 
 	int32_t removeElemAt(int32_t r) {
 		if (n < m * m / 8) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t i = r / m;
 		int32_t e = children[i].removeElemAt(r - i*m);
-		for (int32_t j = i; j < (n-1) / m; j++) {
+		for (int32_t j = i; j < (n - 1) / m; j++) {
 			children[j].insertLast(children[j + 1].removeFirst());
 		}
 		n--;
@@ -142,7 +142,7 @@ public:
 
 	int32_t removeLast() {
 		if (n < m * m / 8) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t i = (n - 1) / m;
@@ -199,20 +199,20 @@ protected:
 
 	int8_t shift;
 
-	void doubleSize() {
+	void increaseCapacity() {
 		int32_t oldM = m;
 		m = m << 1;
 
 		vector<BitTrickDeque> newSubvectors(m);
 		for (int32_t i = 0; i < oldM; i++) {
 			newSubvectors[i] = children[i];
-			newSubvectors[i].doubleSize();
+			newSubvectors[i].increaseCapacity();
 		}
 		for (int32_t i = oldM; i < m; i++) {
 			newSubvectors[i] = BitTrickDeque(m);
 		}
 		children = newSubvectors;
-		
+
 		// Move everything to the lower 1/4 of the current TV
 		int32_t nextDequeWithElems = 1;
 		int32_t moved = 0;
@@ -233,7 +233,7 @@ protected:
 		shift++;
 	}
 
-	void halveSize() {
+	void decreaseCapacity() {
 		m = m >> 1;
 
 		vector<BitTrickDeque> newSubvectors(m);
@@ -280,7 +280,7 @@ public:
 
 	void insertElemAt(int32_t r, int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = r >> shift;
@@ -300,7 +300,7 @@ public:
 
 	void insertLast(int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = n >> shift;
@@ -312,7 +312,7 @@ public:
 
 	int32_t removeElemAt(int32_t r) {
 		if (n < (m << shift) >> 3) {		// Divide by 8
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t i = r >> shift;
@@ -326,7 +326,7 @@ public:
 
 	int32_t removeLast() {
 		if (n < m << shift >> 3) {		// Divide by 8
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t i = (n - 1) >> shift;
@@ -394,7 +394,7 @@ private:
 		this->children = vector<Deque>(size);
 	}
 
-	void doubleSize() {
+	void increaseCapacity() {
 		vector<Deque> newA(m * 2);
 		for (int32_t i = 0; i < m * 2; i++) {
 			newA[i] = Deque(m * 2);
@@ -414,7 +414,7 @@ private:
 		h = 0;
 	}
 
-	void halveSize() {
+	void decreaseCapacity() {
 		vector<Deque> newA(m / 2);
 
 		for (int32_t i = 0; i < m / 2; i++) {
@@ -496,7 +496,7 @@ public:
 		bool insertFront = r < n - r;
 
 		if (tooFull() && ((insertFront && firstFull()) || (!insertFront && lastFull()))) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t n0 = children[h].size();
@@ -538,7 +538,7 @@ public:
 
 	void insertFirst(int32_t e) {
 		if (tooFull() && firstFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		if (children[h].isFull())
@@ -549,7 +549,7 @@ public:
 
 	void insertLast(int32_t e) {
 		if (tooFull() && lastFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = n / m;
@@ -561,7 +561,7 @@ public:
 
 	int32_t removeElemAt(int32_t r) {
 		if (tooEmpty()) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t e;
@@ -659,7 +659,7 @@ private:
 		h = (h + inc + m) & (m - 1);
 	}
 
-	void doubleSize() {
+	void increaseCapacity() {
 		int32_t newM = m << 1;
 		vector<BitTrickDeque> newA(newM);
 		for (int32_t i = 0; i < newM; i++) {
@@ -681,7 +681,7 @@ private:
 		h = 0;
 	}
 
-	void halveSize() {
+	void decreaseCapacity() {
 		int32_t newM = m >> 1;
 		vector<BitTrickDeque> newA(newM);
 
@@ -763,7 +763,7 @@ public:
 		bool insertFront = r < n - r;
 
 		if (tooFull() && ((insertFront && firstFull()) || (!insertFront && lastFull()))) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t n0 = children[h].size();
@@ -805,7 +805,7 @@ public:
 
 	void insertFirst(int32_t e) {
 		if (tooFull() && firstFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		if (children[h].isFull())
@@ -816,7 +816,7 @@ public:
 
 	void insertLast(int32_t e) {
 		if (tooFull() && lastFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = n >> shift;
@@ -828,7 +828,7 @@ public:
 
 	int32_t removeElemAt(int32_t r) {
 		if (tooEmpty()) {
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t e;
@@ -908,78 +908,90 @@ public:
 };
 
 
-class UnamortisedBitTrickSimple2TieredVector : public ArrayDataStructure {
+class DeamortisedBitTrickSimple2TieredVector : public ArrayDataStructure {
 private:
 	int32_t n = 0;
 	int32_t m = 0;
 
-	int32_t moreN = 0;
-	int32_t fewerN = 0;
+	int32_t n_double = 0;
+	int32_t missing_double = 0;
 protected:
-	vector<BitTrickDeque> fewerChildren;
 	vector<BitTrickDeque> children;
-	vector<BitTrickDeque> moreChildren;
+	vector<BitTrickDeque> children_double;
 
 	int8_t shift;
 
-	void doubleSize() {
+	void increaseCapacity() {
 		int32_t oldM = m;
-		m = m << 1;		
-		children.swap(moreChildren);
-		moreChildren.clear();
-		moreChildren = vector<BitTrickDeque>(m << 1);
-		for (int32_t i = 0; i < m << 1; i++) {
-			moreChildren[i] = BitTrickDeque(m << 1);
-		}
-		moreN = 0;
+		m = m << 1;
+		children.swap(children_double);
+		n_double = 0;
+		missing_double = 0;
 
-		fewerChildren.clear();
-		fewerChildren = vector<BitTrickDeque>(oldM);
-		for (int32_t i = 0; i < oldM; i++) {
-			fewerChildren[i] = BitTrickDeque(oldM);
-		}
 		shift++;
 	}
 
-	void halveSize() {
-		int32_t oldM = m;
-		m = m >> 1;
+	void decreaseCapacity() {
+		throw exception("Not implemented");
+		//int32_t oldM = m;
+		//m = m >> 1;
 
-		children.swap(fewerChildren);
-		fewerChildren = vector<BitTrickDeque>(m >> 1);
-		for (int32_t i = 0; i < m >> 1; i++) {
-			fewerChildren[i] = BitTrickDeque(m >> 1);
+		//moreChildren.clear();
+		//moreChildren = vector<BitTrickDeque>(oldM);
+		//for (int32_t i = 0; i < oldM; i++) {
+		//	moreChildren[i] = BitTrickDeque(oldM);
+		//}
+
+		//shift--;
+	}
+
+	void insertElemAtMore(int32_t r, int32_t e) {
+		int8_t moreShift = shift + 1;
+		int32_t i = r >> moreShift;
+
+		if (children_double.size() > m << 1) {
+			children_double.erase(children_double.end());
 		}
-		fewerN = 0;
-
-		moreChildren.clear();
-		moreChildren = vector<BitTrickDeque>(oldM);
-		for (int32_t i = 0; i < oldM; i++) {
-			moreChildren[i] = BitTrickDeque(oldM);
+		if (missing_double < m << 1) {
+			if (children_double.size() > missing_double)
+				children_double[missing_double++] = BitTrickDeque(m << 1);
+			else
+				children_double.insert(children_double.begin() + missing_double++, BitTrickDeque(m << 1));
 		}
 
-		shift--;
+		if (children_double[i].isFull()) {
+			int32_t back = n_double >> moreShift;
+			if (children_double[back].isFull()) {
+				back++;
+			}
+			for (int32_t j = back; j > i; j--) {
+				children_double[j].insertFirst(children_double[j - 1].removeLast());
+			}
+		}
+		children_double[i].insertElemAt(r - (i << moreShift), e);
+		n_double++;
+	}
+
+	void insertMoreLast(int32_t e) {
+		insertElemAtMore(n_double, e);
 	}
 
 public:
-	UnamortisedBitTrickSimple2TieredVector() {
+	DeamortisedBitTrickSimple2TieredVector() {
 		this->m = DEFAULT_SIZE;
 		this->shift = (int32_t)log2(DEFAULT_SIZE);
 		this->children = vector<BitTrickDeque>(DEFAULT_SIZE);
-		this->fewerChildren = vector<BitTrickDeque>(DEFAULT_SIZE >> 1);
-		this->moreChildren = vector<BitTrickDeque>(DEFAULT_SIZE << 1);
+		this->children_double = vector<BitTrickDeque>(DEFAULT_SIZE << 1);
 		for (int32_t i = 0; i < m << 1; i++) {
-			moreChildren[i] = BitTrickDeque(m << 1);
+			children_double[i] = BitTrickDeque(m << 1);
 		}
 	}
 
-	~UnamortisedBitTrickSimple2TieredVector(void) {
+	~DeamortisedBitTrickSimple2TieredVector(void) {
 		children.clear();
 		vector<BitTrickDeque>().swap(children);
-		fewerChildren.clear();
-		vector<BitTrickDeque>().swap(fewerChildren);
-		moreChildren.clear();
-		vector<BitTrickDeque>().swap(moreChildren);
+		children_double.clear();
+		vector<BitTrickDeque>().swap(children_double);
 	}
 
 	uint32_t size() {
@@ -999,7 +1011,7 @@ public:
 
 	void insertElemAt(int32_t r, int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = r >> shift;
@@ -1017,17 +1029,20 @@ public:
 
 		n++;
 
-		if (r < moreN) {
+		if (r < n_double) {
 			insertElemAtMore(r, e);
 		}
-		if (moreN < n) {
-			insertMoreLast(getElemAt(moreN));
+		if (n_double < n) {
+			insertMoreLast(getElemAt(n_double));
+		}
+		if (n_double < n) {
+			insertMoreLast(getElemAt(n_double));
 		}
 	}
 
 	void insertLast(int32_t e) {
 		if (isFull()) {
-			doubleSize();
+			increaseCapacity();
 		}
 
 		int32_t i = n >> shift;
@@ -1037,51 +1052,10 @@ public:
 		n++;
 	}
 
-	void insertElemAtMore(int32_t r, int32_t e) {
-		int8_t moreShift = shift + 1;
-		int32_t i = r >> moreShift;
-
-		if (moreChildren[i].isFull()) {
-			int32_t back = moreN >> moreShift;
-			if (moreChildren[back].isFull()) {
-				back++;
-			}
-			for (int32_t j = back; j > i; j--) {
-				moreChildren[j].insertFirst(moreChildren[j - 1].removeLast());
-			}
-		}
-		moreChildren[i].insertElemAt(r - (i << moreShift), e);
-		moreN++;
-	}
-
-	void insertMoreLast(int32_t e) {
-		insertElemAtMore(moreN, e);
-	}
-
-	void insertElemAtFewer(int32_t r, int32_t e) {
-		int8_t fewerShift = shift - 1;
-		int32_t i = r >> fewerShift;
-
-		if (fewerChildren[i].isFull()) {
-			int32_t back = fewerN >> fewerShift;
-			if (fewerChildren[back].isFull()) {
-				back++;
-			}
-			for (int32_t j = back; j > i; j--) {
-				fewerChildren[j].insertFirst(fewerChildren[j - 1].removeLast());
-			}
-		}
-		fewerChildren[i].insertElemAt(r - (i << fewerShift), e);
-		fewerN++;
-	}
-
-	void insertFewerLast(int32_t e) {
-		insertElemAtFewer(fewerN, e);
-	}
-
 	int32_t removeElemAt(int32_t r) {
+		throw exception("Not implemented");
 		if (n < (m << shift) >> 3) {		// Divide by 8
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t i = r >> shift;
@@ -1092,15 +1066,8 @@ public:
 
 		n--;
 
-		if (fewerN > r) {
-			removeElemAtFewer(r);
-		}
-		if (moreN > r) {
+		if (n_double > r) {
 			removeElemAtMore(r);
-		}
-
-		if (n <= m << shift >> 1 && fewerN < n) {
-			insertFewerLast(getElemAt(fewerN));
 		}
 
 		return e;
@@ -1108,22 +1075,15 @@ public:
 
 	int32_t removeLast() {
 		if (n < m << shift >> 3) {		// Divide by 8
-			halveSize();
+			decreaseCapacity();
 		}
 
 		int32_t i = (n - 1) >> shift;
 		int32_t e = children[i].removeElemAt(n - 1 - (i << shift));
 		n--;
 
-		if (fewerN > n) {
-			removeElemAtFewer(fewerN);
-		}
-		if (moreN > n) {
-			removeElemAtMore(moreN);
-		}
-
-		if (n <= m << shift >> 1 && fewerN < n) {
-			insertFewerLast(getElemAt(fewerN));
+		if (n_double > n) {
+			removeElemAtMore(n_double);
 		}
 
 		return e;
@@ -1132,21 +1092,11 @@ public:
 	void removeElemAtMore(int32_t r) {
 		int8_t moreShift = shift + 1;
 		int32_t i = r >> moreShift;
-		int32_t e = moreChildren[i].removeElemAt(r - (i << moreShift));
-		for (int32_t j = i; j < (moreN - 1) >> moreShift; j++) {
-			moreChildren[j].insertLast(moreChildren[j + 1].removeFirst());
+		int32_t e = children_double[i].removeElemAt(r - (i << moreShift));
+		for (int32_t j = i; j < (n_double - 1) >> moreShift; j++) {
+			children_double[j].insertLast(children_double[j + 1].removeFirst());
 		}
-		moreN--;
-	}
-
-	void removeElemAtFewer(int32_t r) {
-		int8_t fewerShift = shift - 1;
-		int32_t i = r >> fewerShift;
-		int32_t e = fewerChildren[i].removeElemAt(r - (i << fewerShift));
-		for (int32_t j = i; j < (fewerN - 1) >> fewerShift; j++) {
-			fewerChildren[j].insertLast(fewerChildren[j + 1].removeFirst());
-		}
-		fewerN--;
+		n_double--;
 	}
 
 	bool isFull() {
@@ -1169,27 +1119,17 @@ public:
 		if (m > 0) {
 			s += children[0].toStringPretty();
 		}
-		for (int32_t i = 1; i < m; i++) {
+		for (int32_t i = 1; i < children.size(); i++) {
 			s += ", " + children[i].toStringPretty();
 		}
 		s += " }";
 
 		s += "\n{ ";
 		if (m > 0) {
-			s += moreChildren[0].toStringPretty();
+			s += children_double[0].toStringPretty();
 		}
-		for (int32_t i = 1; i < m << 1; i++) {
-			s += ", " + moreChildren[i].toStringPretty();
-		}
-		
-		s += " }";
-
-		s += "\n{ ";
-		if (m > 0) {
-			s += fewerChildren[0].toStringPretty();
-		}
-		for (int32_t i = 1; i < m >> 1; i++) {
-			s += ", " + fewerChildren[i].toStringPretty();
+		for (int32_t i = 1; i < children_double.size(); i++) {
+			s += ", " + children_double[i].toStringPretty();
 		}
 		return s += " }";
 	}
@@ -1199,7 +1139,7 @@ public:
 		if (m > 0) {
 			s += children[0].toString();
 		}
-		for (int32_t i = 1; i < m; i++) {
+		for (int32_t i = 1; i < children.size(); i++) {
 			s += ", " + children[i].toString();
 		}
 		return s += " }";

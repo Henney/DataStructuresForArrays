@@ -28,9 +28,9 @@ namespace TestArrayDataStructures
 			ds.insertElemAt(order[i], item);
 #if DEBUG
 			Logger::WriteMessage(("Inserted " + to_string(item) + " at index " + to_string(order[i])).c_str());
-			Logger::WriteMessage(ds.toString().c_str());
+			//Logger::WriteMessage(ds.toString().c_str());
 			Logger::WriteMessage(ds.toStringPretty().c_str());
-			//Logger::WriteMessage(("n: " + to_string(ds.size())).c_str());
+			Logger::WriteMessage(("n: " + to_string(ds.size())).c_str());
 #endif
 			Assert::AreEqual(
 				expected[i][order[i]],
@@ -69,7 +69,7 @@ namespace TestArrayDataStructures
 			int32_t item = ds[i];
 #if DEBUG
 			Logger::WriteMessage(("Retrieved element " + to_string(item) + " at index " + to_string(i)).c_str());
-			Logger::WriteMessage(ds.toString().c_str());
+			//Logger::WriteMessage(ds.toString().c_str());
 			Logger::WriteMessage(ds.toStringPretty().c_str());
 #endif
 			Assert::AreEqual(
@@ -114,7 +114,7 @@ namespace TestArrayDataStructures
 		Assert::IsTrue(ds.size() == 0);
 	}
 
-	void testArrayDataStructure(ArrayDataStructure &ds, string name) {
+	void testArrayDataStructure(ArrayDataStructure &ds, string name, bool remove) {
 		int32_t* order = new int32_t[SIZE];
 		RESEED(SEED2);
 		for (int32_t i = 0; i < SIZE; i++) {
@@ -134,6 +134,9 @@ namespace TestArrayDataStructures
 		testInsertion(ds, order, expected);
 		testRetrieval(name, ds, items);
 
+		if (!remove)
+			return;
+
 		// Setup for removal
 		RESEED(SEED3);
 		for (int32_t i = 1; i < SIZE; i++) {
@@ -152,6 +155,10 @@ namespace TestArrayDataStructures
 		// End setup
 
 		testRemoval(name, ds, order, removed, expectedRemovals);
+	}
+
+	void testArrayDataStructure(ArrayDataStructure &ds, string name) {
+		testArrayDataStructure(ds, name, true);
 	}
 
 	TEST_CLASS(UnitTests) {
@@ -180,8 +187,8 @@ namespace TestArrayDataStructures
 			testArrayDataStructure(BitTrickDeque2TieredVector(), "BitTrickDeque2TieredVector");
 		}
 
-		TEST_METHOD(testUnamortisedBitTrickSimple2TieredVector) {
-			testArrayDataStructure(UnamortisedBitTrickSimple2TieredVector(), "UnamortisedBitTrickSimple2TieredVector");
+		TEST_METHOD(testDeamortisedBitTrickSimple2TieredVector) {
+			testArrayDataStructure(DeamortisedBitTrickSimple2TieredVector(), "DeamortisedBitTrickSimple2TieredVector", false);
 		}
 
 		//TEST_METHOD(testGeneral2TieredVector) {
